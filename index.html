@@ -12,7 +12,7 @@
   --mil-green:#3d5a3e;--mil-dark:#1e2e1e;--red:#8b1a1a;
   --blue:#1a3a6b;--teal:#2a5a5a;--map:#c4b07a;
   --grid:rgba(100,80,20,0.25);--panel:rgba(20,25,15,0.95);
-  --pborder:#6a5a20;--bright:#f0e8cc;--muted:#a09060;
+  --pborder:#6a5a20;--bright:#f0e8cc;--muted:#d8cfa8;
   --gold:#d4a820;--hague:#1a4a8a;--warn:#c87020;
 }
 body{background:#1a1a10;font-family:'Share Tech Mono',monospace;color:var(--bright);overflow-x:hidden;min-height:100vh}
@@ -23,13 +23,13 @@ body{background:#1a1a10;font-family:'Share Tech Mono',monospace;color:var(--brig
   min-height:100vh;padding:30px 20px;background:#0d1015;
 }
 .landing-title{font-family:'Cinzel',serif;font-size:clamp(20px,4vw,36px);color:var(--gold);letter-spacing:4px;text-align:center;margin-bottom:6px}
-.landing-sub{font-size:clamp(10px,2vw,13px);color:var(--khaki);letter-spacing:3px;text-align:center;margin-bottom:30px}
+.landing-sub{font-size:clamp(11px,2vw,14px);color:#e8c840;letter-spacing:3px;text-align:center;margin-bottom:30px}
 .landing-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;max-width:960px;width:100%;margin-bottom:30px}
 .land-card{background:var(--panel);border:1px solid var(--pborder);padding:20px;text-align:center}
 .land-card h3{font-family:'Cinzel',serif;color:var(--gold);font-size:13px;letter-spacing:2px;margin-bottom:10px}
-.land-card p{font-size:11px;color:var(--muted);line-height:1.7;margin-bottom:12px}
+.land-card p{font-size:12px;color:#d8cfa8;line-height:1.7;margin-bottom:12px}
 #qr-canvas{border:2px solid var(--gold);padding:8px;background:#fff;margin:0 auto 10px}
-.qr-url{font-size:9px;color:var(--muted);word-break:break-all;max-width:240px;margin:0 auto}
+.qr-url{font-size:9px;color:#d8cfa8;word-break:break-all;max-width:240px;margin:0 auto;text-align:center}
 .role-pick{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .role-btn{
   border:1px solid var(--pborder);background:transparent;
@@ -77,7 +77,7 @@ body{background:#1a1a10;font-family:'Share Tech Mono',monospace;color:var(--brig
 
 /* ── LEFT PANEL ── */
 .l-panel{background:var(--panel);border-right:1px solid var(--pborder);padding:10px;overflow-y:auto;display:flex;flex-direction:column;gap:10px}
-.sec-title{font-size:8px;letter-spacing:3px;text-transform:uppercase;color:var(--khaki);border-bottom:1px solid var(--pborder);padding-bottom:3px;margin-bottom:6px}
+.sec-title{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:#e8c840;border-bottom:1px solid var(--pborder);padding-bottom:4px;margin-bottom:8px}
 .role-card{border:1px solid var(--pborder);padding:7px 9px;cursor:pointer;transition:.2s}
 .role-card:hover{border-color:var(--gold);background:rgba(100,80,20,.15)}
 .role-card.selected{border-color:var(--gold);background:rgba(100,80,20,.25)}
@@ -85,7 +85,7 @@ body{background:#1a1a10;font-family:'Share Tech Mono',monospace;color:var(--brig
 .rc-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px}
 .rc-name{font-size:10px;font-weight:700;letter-spacing:1px}
 .rc-tag{font-size:7px;padding:1px 5px;border:1px solid;text-transform:uppercase;letter-spacing:1px}
-.rc-desc{font-size:8px;color:var(--muted);line-height:1.4;margin-bottom:5px}
+.rc-desc{font-size:9px;color:#d8cfa8;line-height:1.5;margin-bottom:5px}
 .ap-row{display:flex;gap:4px;margin-top:4px}
 .ap-dot{width:10px;height:10px;border:1px solid var(--khaki);background:var(--gold);transition:.2s}
 .ap-dot.used{background:transparent;border-color:var(--pborder)}
@@ -117,8 +117,8 @@ body{background:#1a1a10;font-family:'Share Tech Mono',monospace;color:var(--brig
 
 /* ── RIGHT PANEL ── */
 .r-panel{background:var(--panel);border-left:1px solid var(--pborder);padding:10px;overflow-y:auto;display:flex;flex-direction:column;gap:8px}
-.sitrep{border:1px solid var(--pborder);padding:7px;font-size:9px;line-height:1.7;color:var(--muted);max-height:120px;overflow-y:auto}
-.sl{margin-bottom:1px}
+.sitrep{border:1px solid var(--pborder);padding:10px;font-size:12px;line-height:1.8;color:#ffffff;max-height:200px;overflow-y:auto}
+.sl{margin-bottom:3px;color:#ffffff}
 .sl.alert{color:#d87070}
 .sl.legal{color:#6a9fd8}
 .sl.neutral{color:#70c8c8}
@@ -127,18 +127,18 @@ body{background:#1a1a10;font-family:'Share Tech Mono',monospace;color:var(--brig
 .score-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px}
 .score-card{border:1px solid var(--pborder);padding:7px;text-align:center}
 .score-val{font-size:20px;font-family:'Cinzel',serif;color:var(--gold)}
-.score-lbl{font-size:7px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-top:1px}
+.score-lbl{font-size:8px;color:#d8cfa8;letter-spacing:1px;text-transform:uppercase;margin-top:1px}
 .lb-wrap{margin:2px 0}
 .lb-row{display:flex;justify-content:space-between;font-size:8px;margin-bottom:1px}
 .lb-track{height:5px;background:var(--pborder)}
 .lb-fill{height:100%;transition:width .5s}
 .lb-prot{background:var(--hague)}
 .lb-viol{background:var(--red)}
-.hs-detail{border:1px solid var(--hague);padding:7px;font-size:9px;line-height:1.6}
+.hs-detail{border:1px solid var(--hague);padding:9px;font-size:11px;line-height:1.7;color:#ffffff}
 .hd-name{color:var(--gold);font-size:10px;margin-bottom:3px;letter-spacing:1px}
 .action-btn{
   display:block;width:100%;background:transparent;border:1px solid var(--pborder);
-  color:var(--bright);font-family:'Share Tech Mono',monospace;font-size:9px;
+  color:#ffffff;font-family:'Share Tech Mono',monospace;font-size:11px;
   padding:6px 8px;margin-bottom:4px;cursor:pointer;text-align:left;
   letter-spacing:.5px;transition:.2s;position:relative;line-height:1.4;
 }
@@ -148,8 +148,8 @@ body{background:#1a1a10;font-family:'Share Tech Mono',monospace;color:var(--brig
 .action-btn.tactical{border-left:2px solid var(--mil-green)}
 .action-btn.intel{border-left:2px solid var(--gold)}
 .action-btn.illegal{border-left:2px solid var(--red)}
-.ac{position:absolute;right:6px;top:50%;transform:translateY(-50%);font-size:7px;color:var(--muted)}
-.orders-log{font-size:8px;line-height:1.8;color:var(--muted);border:1px solid var(--pborder);padding:5px 7px;max-height:100px;overflow-y:auto}
+.ac{position:absolute;right:6px;top:50%;transform:translateY(-50%);font-size:9px;color:#d8cfa8}
+.orders-log{font-size:11px;line-height:1.9;color:#e8e0c8;border:1px solid var(--pborder);padding:8px 10px;max-height:130px;overflow-y:auto}
 .ol{border-bottom:1px solid rgba(100,80,20,.2);padding:1px 0}
 .ol.ok{color:#70c870}
 .ol.violation{color:#d87070}
@@ -182,7 +182,7 @@ body{background:#1a1a10;font-family:'Share Tech Mono',monospace;color:var(--brig
 .esc{background:var(--panel);border:1px solid var(--khaki);padding:14px 20px;text-align:center;min-width:120px}
 .esv{font-size:clamp(24px,4vw,36px);color:var(--gold)}
 .esl{font-size:9px;color:var(--muted);letter-spacing:2px;margin-top:3px}
-.end-verdict{font-size:11px;color:var(--muted);max-width:480px;text-align:center;line-height:1.8;font-family:'Share Tech Mono',monospace;margin-bottom:16px}
+.end-verdict{font-size:12px;color:#e8e0c8;max-width:480px;text-align:center;line-height:1.8;font-family:'Share Tech Mono',monospace;margin-bottom:16px}
 .end-legal{font-size:9px;color:#6a9fd8;max-width:480px;text-align:center;line-height:1.8;font-family:'Share Tech Mono',monospace;margin-bottom:20px}
 .restart-btn{background:var(--mil-green);border:1px solid var(--khaki);color:var(--gold);font-family:'Cinzel',serif;font-size:11px;letter-spacing:2px;padding:10px 28px;cursor:pointer}
 
@@ -205,7 +205,8 @@ body{background:#1a1a10;font-family:'Share Tech Mono',monospace;color:var(--brig
 <!-- ══════════════════ LANDING ══════════════════ -->
 <div id="landing">
   <div class="landing-title">OPERATION HORIZON SHIELD</div>
-  <div class="landing-sub">CPP WARGAME · HERITAGE AT WAR · OXFORD 2026</div>
+  <div class="landing-sub">CPP WARGAME · PROTEZIONE DEL PATRIMONIO CULTURALE</div>
+  <div style="font-family:'Cinzel',serif;font-size:16px;color:#ffffff;letter-spacing:2px;margin-bottom:24px;margin-top:-16px">Progetto di ricerca &mdash; Claudio Sanz&ograve;</div>
 
   <div class="landing-grid">
 
@@ -257,7 +258,7 @@ body{background:#1a1a10;font-family:'Share Tech Mono',monospace;color:var(--brig
       <div class="info-strip" style="margin-top:12px;justify-content:flex-start">
         <span class="info-chip">v1.0</span>
         <span class="info-chip">HERITAGE AT WAR</span>
-        <span class="info-chip">OXFORD 2026</span>
+        <span class="info-chip">PROTOTIPO v1.0</span>
       </div>
     </div>
   </div>
@@ -422,46 +423,35 @@ body{background:#1a1a10;font-family:'Share Tech Mono',monospace;color:var(--brig
 //  QR CODE GENERATOR (pure JS, no deps)
 // ══════════════════════════════════════════════════════════
 (function(){
-  // Minimal QR code for URL — uses Google Charts API fallback drawing
-  // or draws a decorative placeholder that looks like a QR
+  // Real QR code via Google Charts API
+  const url = "https://claudiosanzo-ita.github.io/horizon-shield-wargame/";
+  document.getElementById('qr-url-label').textContent = url;
   const canvas = document.getElementById('qr-canvas');
-  const ctx = canvas.getContext('2d');
-  const url = window.location.href || 'Aprire questo file HTML nel browser';
-  document.getElementById('qr-url-label').textContent = 'Questo file: apri in browser → condividi URL';
-
-  // Draw decorative QR-like pattern
-  const S = 180, cell = 6, cols = Math.floor(S/cell);
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(0,0,S,S);
-
-  // Seed from URL chars for deterministic pattern
-  let seed = 0;
-  for(let i=0;i<url.length;i++) seed = (seed*31 + url.charCodeAt(i)) & 0xFFFFFFFF;
-  function rand(){seed=(seed*1664525+1013904223)&0xFFFFFFFF;return (seed>>>0)/4294967296;}
-
-  ctx.fillStyle = '#000';
-  // Draw cells
-  for(let r=0;r<cols;r++){
-    for(let c=0;c<cols;c++){
-      // Skip finder pattern zones
-      const inTL = r<8&&c<8, inTR = r<8&&c>cols-9, inBL = r>cols-9&&c<8;
-      if(inTL||inTR||inBL) continue;
-      if(rand()<0.45) ctx.fillRect(c*cell,r*cell,cell-1,cell-1);
-    }
-  }
-
-  // Draw finder patterns (top-left, top-right, bottom-left)
-  function finder(ox,oy){
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = function(){
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle='#ffffff';
+    ctx.fillRect(0,0,180,180);
+    ctx.drawImage(img,0,0,180,180);
+  };
+  img.onerror = function(){
+    // Fallback: draw URL as text with QR border
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle='#ffffff';
+    ctx.fillRect(0,0,180,180);
+    ctx.strokeStyle='#000';
+    ctx.lineWidth=4;
+    ctx.strokeRect(4,4,172,172);
     ctx.fillStyle='#000';
-    ctx.fillRect(ox,oy,7*cell,7*cell);
-    ctx.fillStyle='#fff';
-    ctx.fillRect(ox+cell,oy+cell,5*cell,5*cell);
-    ctx.fillStyle='#000';
-    ctx.fillRect(ox+2*cell,oy+2*cell,3*cell,3*cell);
-  }
-  finder(0,0);
-  finder((cols-7)*cell,0);
-  finder(0,(cols-7)*cell);
+    ctx.font='8px monospace';
+    ctx.textAlign='center';
+    ctx.fillText('Scansiona QR o visita:',90,80);
+    ctx.font='7px monospace';
+    const words = url.replace('https://','').split('/');
+    words.forEach((w,i)=>ctx.fillText(w,90,95+i*12));
+  };
+  img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=' + encodeURIComponent(url);
 })();
 
 // ══════════════════════════════════════════════════════════
@@ -709,6 +699,10 @@ function showEnd(){
     <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center">
       <button class="restart-btn" onclick="location.reload()">▶ NUOVA PARTITA</button>
       <button class="restart-btn" style="background:#1a1a10" onclick="goLanding()">↩ MENU</button>
+    </div>
+    <div style="margin-top:28px;padding-top:16px;border-top:1px solid #3a3020;text-align:center">
+      <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:#6a5a30;letter-spacing:3px;text-transform:uppercase;margin-bottom:4px">Progetto di ricerca</div>
+      <div style="font-family:'Cinzel',serif;font-size:13px;color:#8a7840;letter-spacing:2px">Claudio Sanzò</div>
     </div>`;
   document.getElementById('game-root').appendChild(el);
 }
