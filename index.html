@@ -672,6 +672,7 @@ function nextPhase(){
     ['16:00','Fase DEBRIEFING. Analisi decisioni CPP in corso.','legal']
   ];
   if(msgs[G.phase-1]) setTimeout(()=>sit(...msgs[G.phase-1]),800);
+  if(G.phase===2) setTimeout(()=>checkSofaTrigger(), 2000);
   renderRoleCards();
   if(G.selRole>=0) renderActs();
 }
@@ -695,7 +696,8 @@ function showEnd(){
       <div class="esc"><div class="esv">${G.violations}%</div><div class="esl">VIOLAZIONI DIU</div></div>
     </div>
     <div class="end-verdict">${verdict}</div>
-    <div class="end-legal">Conv. Aia 1954 · II Protocollo 1999 · DIU consuetudinario R.38-41<br>Statuto Roma art. 8 · CPI, Al Mahdi (ICC-01/12-01/15, 2016)</div>
+    <div class="end-legal">Conv. Aia 1954 · II Protocollo 1999 · DIU consuetudinario R.38-41<br>Statuto Roma art. 8 · CPI, Al Mahdi (ICC-01/12-01/15, 2016)<br>Art. 98 Statuto Roma · SOFA · Portale MAECI — Personale in missione</div>
+    ${G.sofaVerdict ? `<div style="margin-top:12px;border:1px solid #c8a820;padding:12px 16px;max-width:480px;text-align:left;font-size:10px;line-height:1.8;color:#e8e0c8"><div style="color:#d4a820;font-size:9px;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px">⚖ VALUTAZIONE DILEMMA SOFA</div>${G.sofaVerdict}</div>` : ''}
     <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center">
       <button class="restart-btn" onclick="location.reload()">▶ NUOVA PARTITA</button>
       <button class="restart-btn" style="background:#1a1a10" onclick="goLanding()">↩ MENU</button>
@@ -735,5 +737,64 @@ function goLanding(){
   document.getElementById('landing').style.display='flex';
 }
 </script>
+
+<!-- ══ SOFA DILEMMA MODAL ══ -->
+<div id="sofa-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:800;display:none;align-items:center;justify-content:center;padding:16px">
+  <div style="background:#0d1015;border:2px solid #c8a820;max-width:580px;width:100%;padding:24px;font-family:'Share Tech Mono',monospace;position:relative">
+
+    <!-- Header -->
+    <div style="background:#1a0a00;border:1px solid #c87020;padding:10px 14px;margin-bottom:16px">
+      <div style="font-size:9px;letter-spacing:3px;color:#c87020;text-transform:uppercase;margin-bottom:3px">⚠ EVENTO CRITICO — FASE INGAGGIO</div>
+      <div style="font-family:'Cinzel',serif;font-size:16px;color:#d4a820;letter-spacing:2px">ASSENZA DI COPERTURA GIURIDICA</div>
+    </div>
+
+    <!-- Sitrep -->
+    <div style="font-size:11px;color:#e8e0c8;line-height:1.8;margin-bottom:14px">
+      Il CPP Advisor TPC ha individuato un deposito clandestino di reperti archeologici saccheggiati dagli Scavi nell'abitazione di un comandante insurrezionale. L'intervento consentirebbe il recupero immediato di oltre 300 elementi.
+    </div>
+
+    <!-- Legal block -->
+    <div style="border:1px solid #1a4a8a;background:rgba(26,74,138,0.1);padding:10px 14px;margin-bottom:14px">
+      <div style="font-size:9px;color:#6a9fd8;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px">⚖ PROBLEMA GIURIDICO — SOFA / ART. 98 STATUTO ROMA</div>
+      <div style="font-size:10px;color:#cadcfc;line-height:1.8">
+        Il Teatro Operativo Talos non ha ratificato un SOFA (Status of Forces Agreement) con l'Italia. Il personale TPC non gode di immunità funzionale esplicita in questo teatro.<br><br>
+        <span style="color:#d87070">Art. 98 Statuto Roma:</span> la CPI non può procedere a una richiesta di consegna che obbligherebbe lo Stato richiesto ad agire in modo incompatibile con gli obblighi del diritto internazionale in materia di immunità.<br><br>
+        <span style="color:#c87020">Rischio concreto:</span> un intervento senza copertura SOFA espone il personale TPC a giurisdizione penale locale, potenzialmente ostile, senza garanzie di rimpatrio o tutela consolare adeguata.
+      </div>
+    </div>
+
+    <!-- MAECI reference -->
+    <div style="border:1px solid #3a3020;background:rgba(40,30,10,0.5);padding:8px 12px;margin-bottom:16px;font-size:9px;color:#a09060;line-height:1.7">
+      📋 Il portale MAECI per il personale in missione specifica che in assenza di accordo bilaterale o di mandato ONU/NATO con clausola di immunità esplicita, il personale dell'Arma operante in teatro non strutturato è soggetto alla giurisdizione locale. L'art. 98 Statuto Roma non si applica automaticamente in assenza di SOFA ratificato.
+    </div>
+
+    <!-- Choices -->
+    <div style="font-size:9px;color:#e8c840;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px">DELIBERAZIONE — TUTTI I RUOLI DEVONO CONCORDARE</div>
+
+    <div style="display:flex;flex-direction:column;gap:8px">
+
+      <button onclick="sofaChoice('intervento')" style="background:transparent;border:1px solid #1a6b72;border-left:3px solid #1a6b72;color:#e8e0c8;font-family:'Share Tech Mono',monospace;font-size:10px;padding:10px 14px;cursor:pointer;text-align:left;line-height:1.6">
+        <span style="color:#70c8c8;font-weight:bold">A — INTERVENIRE</span> (senza copertura SOFA)<br>
+        <span style="color:#a09060;font-size:9px">Recupero reperti garantito. Esposizione giuridica del personale TPC alla giurisdizione locale. Rischio incidente diplomatico. +30 BLU, +20% violazioni protocollo.</span>
+      </button>
+
+      <button onclick="sofaChoice('richiestaSOFA')" style="background:transparent;border:1px solid #d4a820;border-left:3px solid #d4a820;color:#e8e0c8;font-family:'Share Tech Mono',monospace;font-size:10px;padding:10px 14px;cursor:pointer;text-align:left;line-height:1.6">
+        <span style="color:#d4a820;font-weight:bold">B — SOSPENDERE E RICHIEDERE COPERTURA DIPLOMATICA</span><br>
+        <span style="color:#a09060;font-size:9px">Il CIMIC attiva canale MAECI per accordo urgente. Ritardo operativo: 48h. Reperti a rischio dispersione. +15 BLU, piena compliance. Opzione legalmente corretta.</span>
+      </button>
+
+      <button onclick="sofaChoice('ONU')" style="background:transparent;border:1px solid #6a9fd8;border-left:3px solid #6a9fd8;color:#e8e0c8;font-family:'Share Tech Mono',monospace;font-size:10px;padding:10px 14px;cursor:pointer;text-align:left;line-height:1.6">
+        <span style="color:#6a9fd8;font-weight:bold">C — DELEGARE AD AUTORITÀ ONU/UNESCO</span><br>
+        <span style="color:#a09060;font-size:9px">Il CPP Advisor trasferisce le coordinate a UNESCO e INTERPOL. Nessuna esposizione giuridica TPC. Intervento più lento ma giuridicamente inattaccabile. +10 BLU, +25% compliance.</span>
+      </button>
+
+      <button onclick="sofaChoice('rinuncia')" style="background:transparent;border:1px solid #5a1010;border-left:3px solid #5a1010;color:#e8e0c8;font-family:'Share Tech Mono',monospace;font-size:10px;padding:10px 14px;cursor:pointer;text-align:left;line-height:1.6">
+        <span style="color:#d87070;font-weight:bold">D — NON INTERVENIRE</span> (priorità incolumità personale)<br>
+        <span style="color:#a09060;font-size:9px">Reperti dispersi. Nessun rischio per il personale. Compliance formale preservata ma obiettivo CPP fallito. 0 punti. Scelta operativamente difendibile.</span>
+      </button>
+
+    </div>
+  </div>
+</div>
 </body>
 </html>
