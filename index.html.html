@@ -1,0 +1,1152 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Operation Horizon Shield — CPP Wargame v3.0 PRO</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Cinzel:wght@400;700&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --khaki:#c8b560;--khaki-dark:#8a7a30;
+  --mil-green:#3d5a3e;--mil-dark:#1e2e1e;--red:#8b1a1a;
+  --blue:#1a3a6b;--teal:#2a5a5a;--map:#c4b07a;
+  --grid:rgba(100,80,20,0.25);--panel:rgba(20,25,15,0.95);
+  --pborder:#6a5a20;--bright:#f0e8cc;--muted:#d8cfa8;
+  --gold:#d4a820;--hague:#1a4a8a;--warn:#c87020;
+}
+body{background:#1a1a10;font-family:'Share Tech Mono',monospace;color:var(--bright);overflow-x:hidden;min-height:100vh}
+.scanlines{position:fixed;top:0;left:0;right:0;bottom:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.03) 2px,rgba(0,0,0,.03) 4px);pointer-events:none;z-index:9999}
+
+/* LANDING */
+#landing{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:30px 20px;background:#0d1015}
+.landing-title{font-family:'Cinzel',serif;font-size:clamp(20px,4vw,34px);color:var(--gold);letter-spacing:4px;text-align:center;margin-bottom:6px}
+.landing-sub{font-size:clamp(10px,2vw,13px);color:#e8c840;letter-spacing:3px;text-align:center;margin-bottom:8px}
+.landing-author{font-family:'Cinzel',serif;font-size:15px;color:#fff;letter-spacing:2px;margin-bottom:24px}
+.l-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px;max-width:920px;width:100%;margin-bottom:24px}
+.l-card{background:var(--panel);border:1px solid var(--pborder);padding:18px;text-align:center}
+.l-card h3{font-family:'Cinzel',serif;color:var(--gold);font-size:12px;letter-spacing:2px;margin-bottom:8px}
+.l-card p{font-size:11px;color:var(--muted);line-height:1.7;margin-bottom:10px}
+#qr-canvas{border:2px solid var(--gold);padding:6px;background:#fff;margin:0 auto 8px}
+.qr-url{font-size:9px;color:var(--muted);word-break:break-all;max-width:220px;margin:0 auto;text-align:center}
+.rpick{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.rbtn{border:1px solid var(--pborder);background:transparent;color:var(--bright);font-family:'Share Tech Mono',monospace;font-size:10px;padding:9px 5px;cursor:pointer;transition:.2s;text-align:center;line-height:1.4}
+.rbtn:hover{border-color:var(--gold);color:var(--gold);background:rgba(200,180,60,.1)}
+.rbtn.rb-b{border-left:3px solid #6a9fd8}.rbtn.rb-t{border-left:3px solid var(--gold)}.rbtn.rb-c{border-left:3px solid #70c8c8}.rbtn.rb-r{border-left:3px solid #d87070}
+.sab{background:var(--mil-green);border:2px solid var(--khaki);color:var(--gold);font-family:'Cinzel',serif;font-size:12px;letter-spacing:2px;padding:12px 36px;cursor:pointer;margin-top:10px;display:block;width:100%;max-width:320px}
+.sab:hover{background:#2a4a2a}
+.info-chip{font-size:9px;color:var(--muted);border:1px solid var(--pborder);padding:3px 10px}
+
+/* GAME HEADER */
+#game-root{display:none;flex-direction:column;min-height:100vh}
+.g-hdr{background:var(--mil-dark);border-bottom:2px solid var(--khaki);padding:5px 10px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:5px;position:sticky;top:0;z-index:100}
+.g-title{font-family:'Cinzel',serif;font-size:clamp(9px,1.8vw,13px);color:var(--gold);letter-spacing:2px}
+.g-title span{color:var(--khaki);font-size:8px;display:block;letter-spacing:2px}
+.pdot{width:7px;height:7px;border-radius:50%;border:1px solid var(--khaki);background:transparent;transition:.3s}
+.pdot.active{background:var(--gold);border-color:var(--gold)}.pdot.done{background:var(--mil-green);border-color:var(--mil-green)}
+.tbadge{background:var(--mil-green);border:1px solid var(--khaki);padding:3px 9px;font-size:8px;color:var(--gold);letter-spacing:1px;white-space:nowrap}
+.myrole{font-size:8px;padding:3px 9px;border:1px solid;letter-spacing:1px}
+
+/* TIMER */
+.tw{display:flex;align-items:center;gap:6px}
+.td{font-family:'Cinzel',serif;font-size:17px;color:var(--gold);letter-spacing:2px;min-width:44px;text-align:center}
+.td.urgent{color:#d87070;animation:pu .5s ease-in-out infinite}
+@keyframes pu{0%,100%{opacity:1}50%{opacity:.5}}
+.tbt{width:70px;height:4px;background:var(--pborder)}.tbf{height:100%;background:var(--gold);transition:width 1s linear}.tbf.urgent{background:#d87070}
+
+/* LAYOUT */
+.g-layout{display:grid;grid-template-columns:200px 1fr 232px;flex:1;min-height:0}
+@media(max-width:860px){.g-layout{display:flex;flex-direction:column}}
+
+/* LEFT */
+.lp{background:var(--panel);border-right:1px solid var(--pborder);padding:9px;overflow-y:auto;display:flex;flex-direction:column;gap:9px}
+.stitle{font-size:8px;letter-spacing:3px;text-transform:uppercase;color:#e8c840;border-bottom:1px solid var(--pborder);padding-bottom:3px;margin-bottom:6px}
+.rc{border:1px solid var(--pborder);padding:6px 8px;cursor:pointer;transition:.2s}
+.rc:hover{border-color:var(--gold);background:rgba(100,80,20,.15)}
+.rc.sel{border-color:var(--gold);background:rgba(100,80,20,.25)}
+.rc.mine{box-shadow:0 0 7px rgba(200,180,90,.3)}
+.rch{display:flex;justify-content:space-between;align-items:center;margin-bottom:2px}
+.rn{font-size:10px;font-weight:700;letter-spacing:1px}
+.rt{font-size:7px;padding:1px 4px;border:1px solid;text-transform:uppercase;letter-spacing:1px}
+.rd{font-size:8px;color:#d8cfa8;line-height:1.4;margin-bottom:4px}
+.apr{display:flex;gap:3px;margin-top:3px}
+.apd{width:9px;height:9px;border:1px solid var(--khaki);background:var(--gold);transition:.2s}
+.apd.u{background:transparent;border-color:var(--pborder)}
+.hsi{border:1px solid;padding:4px 6px;margin-bottom:3px;cursor:pointer;font-size:8px;line-height:1.4;transition:.2s}
+.hsi:hover{opacity:.8}
+.tpp{font-size:9px;color:var(--muted)}
+.ta{border:1px solid #d87070;background:rgba(100,10,10,.3);padding:5px 8px;font-size:9px;color:#d87070;margin-bottom:3px}
+.tpip{display:inline-block;width:7px;height:7px;background:#d87070;border-radius:50%;margin-left:3px;animation:ppp 1.5s ease-in-out infinite}
+@keyframes ppp{0%,100%{opacity:.4}50%{opacity:1}}
+
+/* MAP */
+.mw{position:relative;overflow:hidden;background:var(--map);background-image:repeating-linear-gradient(0deg,var(--grid) 0,var(--grid) 1px,transparent 1px,transparent 60px),repeating-linear-gradient(90deg,var(--grid) 0,var(--grid) 1px,transparent 1px,transparent 60px)}
+.ms{width:100%;height:100%;min-height:380px}
+.cl{font-family:'Share Tech Mono',monospace;font-size:8px;fill:rgba(100,80,20,.5)}
+.tu{fill:#b8a060;stroke:#8a7040;stroke-width:.5}.tf{fill:#4a6a3a;opacity:.7}.tw2{fill:#6a9ab0;stroke:#4a7a90;stroke-width:.5}.tr{stroke:#7a6020;stroke-width:2;fill:none}
+.hg{cursor:pointer;transition:.2s}.hg:hover{opacity:.8}
+.ub{fill:#1a3a6b;stroke:#6a9fd8;stroke-width:1.5}.ur{fill:#6b1a1a;stroke:#d87070;stroke-width:1.5}.utpc{fill:#2a4a20;stroke:#d4a820;stroke-width:1.5}
+.ul{fill:#f0e8cc;font-size:7px;font-family:'Share Tech Mono';font-weight:bold;text-anchor:middle}
+.ut{cursor:pointer;transition:.2s;filter:drop-shadow(1px 1px 2px rgba(0,0,0,.5))}.ut:hover{transform:scale(1.1)}.ut.sel{filter:drop-shadow(0 0 6px rgba(200,180,90,.8))}
+
+/* RIGHT */
+.rp{background:var(--panel);border-left:1px solid var(--pborder);padding:9px;overflow-y:auto;display:flex;flex-direction:column;gap:7px}
+.sitrep{border:1px solid var(--pborder);padding:9px;font-size:11px;line-height:1.8;color:#fff;max-height:160px;overflow-y:auto}
+.sl{margin-bottom:2px;color:#fff}.sl.alert{color:#d87070}.sl.legal{color:#6a9fd8}.sl.neutral{color:#70c8c8}.sl.success{color:#70c870}.sl.event{color:var(--gold);font-weight:bold}
+.st{color:var(--khaki);margin-right:3px}
+.sg{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.sc{border:1px solid var(--pborder);padding:6px;text-align:center}
+.sv{font-size:19px;font-family:'Cinzel',serif;color:var(--gold)}
+.sl2{font-size:7px;color:#d8cfa8;letter-spacing:1px;text-transform:uppercase;margin-top:1px}
+.lbw{margin:2px 0}.lbr{display:flex;justify-content:space-between;font-size:8px;margin-bottom:1px}.lbt{height:4px;background:var(--pborder)}.lbf{height:100%;transition:width .5s}
+.lbp{background:var(--hague)}.lbv{background:var(--red)}.lbtr{background:#d87070}
+.hsd{border:1px solid var(--hague);padding:8px;font-size:10px;line-height:1.7;color:#fff}
+.hdn{color:var(--gold);font-size:10px;margin-bottom:2px;letter-spacing:1px}
+.ab{display:block;width:100%;background:transparent;border:1px solid var(--pborder);color:#fff;font-family:'Share Tech Mono',monospace;font-size:10px;padding:5px 7px;margin-bottom:3px;cursor:pointer;text-align:left;transition:.2s;position:relative;line-height:1.4}
+.ab:hover:not(:disabled){border-color:var(--gold);background:rgba(200,180,60,.1);color:var(--gold)}.ab:disabled{opacity:.3;cursor:not-allowed}
+.ab.legal{border-left:2px solid var(--hague)}.ab.tactical{border-left:2px solid var(--mil-green)}.ab.intel{border-left:2px solid var(--gold)}.ab.illegal{border-left:2px solid var(--red)}.ab.recon{border-left:2px solid #70c8c8}
+.ac2{position:absolute;right:5px;top:50%;transform:translateY(-50%);font-size:8px;color:#d8cfa8}
+.ol2{font-size:10px;line-height:1.8;color:#e8e0c8;border:1px solid var(--pborder);padding:7px 9px;max-height:110px;overflow-y:auto}
+.ole{border-bottom:1px solid rgba(100,80,20,.2);padding:1px 0}.ole.ok{color:#70c870}.ole.violation{color:#d87070}
+.nb{background:var(--mil-green);border:2px solid var(--khaki);color:var(--gold);font-family:'Cinzel',serif;font-size:10px;letter-spacing:2px;padding:7px;cursor:pointer;width:100%}.nb:hover{background:#2a4a2a}
+
+/* EVENT CARD */
+.ec{border:2px solid var(--gold);background:rgba(20,15,5,.95);padding:9px 11px;margin-bottom:7px;animation:ea .5s ease-out}
+@keyframes ea{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+.et{font-family:'Cinzel',serif;font-size:10px;color:var(--gold);letter-spacing:2px;margin-bottom:3px}
+.eb{font-size:9px;color:#e8e0c8;line-height:1.6}
+.ee{font-size:8px;color:#70c8c8;margin-top:3px}
+
+/* SOFA MODAL */
+#sofa-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:800;align-items:center;justify-content:center;padding:14px}
+.sb{background:#0d1015;border:2px solid #c8a820;max-width:560px;width:100%;padding:20px;font-family:'Share Tech Mono',monospace;max-height:90vh;overflow-y:auto}
+.sc2{background:transparent;border:1px solid var(--pborder);color:#e8e0c8;font-family:'Share Tech Mono',monospace;font-size:10px;padding:9px 12px;cursor:pointer;text-align:left;line-height:1.6;width:100%;margin-bottom:7px;transition:.2s}
+.sc2:hover{border-color:var(--gold);background:rgba(200,180,60,.05)}
+
+/* PHASE BANNER */
+.pb{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--mil-dark);border:2px solid var(--gold);padding:16px 32px;font-family:'Cinzel',serif;font-size:clamp(14px,3vw,20px);color:var(--gold);letter-spacing:4px;text-transform:uppercase;z-index:600;animation:pba 2.5s forwards;pointer-events:none;text-align:center}
+@keyframes pba{0%{opacity:0;transform:translate(-50%,-50%) scale(.8)}20%{opacity:1;transform:translate(-50%,-50%) scale(1)}75%{opacity:1}100%{opacity:0}}
+
+/* END SCREEN */
+.es{position:fixed;inset:0;background:rgba(0,0,0,.95);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:700;padding:18px;font-family:'Cinzel',serif;overflow-y:auto}
+.et2{font-size:clamp(18px,4vw,26px);color:var(--gold);letter-spacing:4px;margin-bottom:8px;text-align:center}
+.es2{font-size:10px;color:var(--khaki);letter-spacing:2px;margin-bottom:20px;text-align:center}
+.esc2{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-bottom:20px}
+.esci{background:var(--panel);border:1px solid var(--khaki);padding:12px 16px;text-align:center;min-width:95px}
+.esv2{font-size:clamp(20px,4vw,30px);color:var(--gold)}
+.esl2{font-size:8px;color:var(--muted);letter-spacing:2px;margin-top:2px}
+.ev{font-size:11px;color:#e8e0c8;max-width:500px;text-align:center;line-height:1.8;font-family:'Share Tech Mono',monospace;margin-bottom:12px}
+.rb{background:var(--mil-green);border:1px solid var(--khaki);color:var(--gold);font-family:'Cinzel',serif;font-size:10px;letter-spacing:2px;padding:9px 24px;cursor:pointer}
+
+.legal-panel{background:rgba(10,15,25,.97);border:1px solid #1a4a8a;padding:9px;font-size:8px;line-height:1.7;color:#cadcfc;max-height:180px;overflow-y:auto}
+.lp-title{font-family:'Cinzel',serif;font-size:10px;color:#6a9fd8;letter-spacing:2px;margin-bottom:6px;border-bottom:1px solid #1a4a8a;padding-bottom:3px}
+.lp-item{margin-bottom:3px;border-left:2px solid #1a4a8a;padding-left:6px}
+.lp-item .norm{color:#d4a820;font-size:7px;letter-spacing:1px}
+.lp-item .desc{color:#cadcfc;font-size:8px}
+.lp-item.active-norm{border-left-color:#70c870;background:rgba(112,200,112,.05)}
+#legal-toggle{background:transparent;border:1px solid #1a4a8a;color:#6a9fd8;font-family:'Share Tech Mono',monospace;font-size:8px;padding:3px 8px;cursor:pointer;width:100%;letter-spacing:1px;margin-bottom:4px}
+#legal-toggle:hover{border-color:var(--gold);color:var(--gold)}
+
+/* CRT DICE */
+.ab.crt{border-left:2px solid #f0c040}
+.dice-ov{position:fixed;inset:0;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;z-index:900;flex-direction:column;gap:14px}
+.dice-face{font-size:60px;animation:rd .8s ease-out}
+@keyframes rd{0%{transform:rotate(0) scale(.5);opacity:0}50%{transform:rotate(180deg) scale(1.3)}100%{transform:rotate(360deg) scale(1);opacity:1}}
+.dice-res{font-family:'Cinzel',serif;font-size:20px;color:var(--gold);letter-spacing:3px;text-align:center}
+.dice-det{font-size:11px;color:var(--muted);text-align:center;max-width:340px;line-height:1.7;white-space:pre-line}
+.dice-ok{background:var(--mg);border:1px solid var(--khaki);color:var(--gold);font-family:'Cinzel',serif;font-size:10px;padding:7px 22px;cursor:pointer;letter-spacing:2px;margin-top:6px}
+.sl.dice{color:#f0c040;font-weight:bold}
+.ole.dice{color:#f0c040}
+/* WHITE CELL */
+#wc-panel{display:none;position:fixed;top:46px;right:230px;width:260px;background:#0d1015;border:2px solid #c8a820;z-index:500;padding:11px;max-height:80vh;overflow-y:auto}
+.wc-t{font-family:'Cinzel',serif;font-size:10px;color:#c8a820;letter-spacing:2px;margin-bottom:7px}
+.wc-b{background:transparent;border:1px solid var(--pb);color:var(--bright);font-family:'Share Tech Mono',monospace;font-size:8px;padding:4px 7px;cursor:pointer;width:100%;text-align:left;margin-bottom:3px;transition:.2s}
+.wc-b:hover{border-color:var(--gold);color:var(--gold)}
+#wc-txt{background:rgba(255,255,255,.05);border:1px solid var(--pb);color:var(--bright);font-family:'Share Tech Mono',monospace;font-size:8px;width:100%;padding:4px;margin-bottom:3px;resize:vertical;min-height:40px}
+/* BOT */
+.bot-ind{font-size:7px;color:#c870c8;border:1px solid #c870c8;padding:2px 6px;letter-spacing:1px;animation:bot-p 2s ease-in-out infinite}
+@keyframes bot-p{0%,100%{opacity:.7}50%{opacity:1}}
+/* CONSOLE */
+#cm-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:800;align-items:center;justify-content:center;padding:14px}
+.cm{background:#0d1015;border:2px solid var(--gold);max-width:500px;width:100%;padding:18px;max-height:85vh;overflow-y:auto;font-family:'Share Tech Mono',monospace}
+.cm-title{font-family:'Cinzel',serif;font-size:13px;color:var(--gold);letter-spacing:2px;margin-bottom:10px;border-bottom:1px solid var(--pb);padding-bottom:5px}
+.cm-sec{margin-bottom:9px}
+.cm-lbl{font-size:7px;color:var(--khaki);letter-spacing:2px;text-transform:uppercase;margin-bottom:3px}
+.cm-item{font-size:9px;color:#e8e0c8;border:1px solid var(--pb);padding:3px 7px;margin-bottom:2px;line-height:1.5}
+.cm-cls{background:var(--mg);border:1px solid var(--khaki);color:var(--gold);font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;padding:6px 18px;cursor:pointer;width:100%;margin-top:8px}
+/* OP badge on event cards */
+.op-b{font-size:8px;background:var(--gold);color:#1a1a10;padding:1px 5px;letter-spacing:1px;font-weight:bold;display:inline-block;margin-left:4px}
+/* Terrain labels */
+.terrain-lbl{font-size:7px;fill:#5a8a4a;font-family:'Share Tech Mono',monospace}
+
+.blink{animation:bl 1s step-end infinite}@keyframes bl{0%,100%{opacity:1}50%{opacity:0}}
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track{background:var(--mil-dark)}::-webkit-scrollbar-thumb{background:var(--khaki-dark)}
+</style>
+</head>
+<body>
+<div class="scanlines"></div>
+
+<!-- LANDING -->
+<div id="landing">
+  <div class="landing-title">OPERATION HORIZON SHIELD</div>
+  <div class="landing-sub">CPP WARGAME · PROTEZIONE DEL PATRIMONIO CULTURALE</div>
+  <div class="landing-author">Progetto di ricerca &mdash; Claudio Sanz&ograve;</div>
+  <div class="l-grid">
+    
+    <div class="l-card" style="text-align:left;grid-column:1/-1">
+      <h3 style="text-align:center;margin-bottom:12px">📜 EVOLUZIONE NORMATIVA — TUTELA BENI CULTURALI (1935–2019)</h3>
+      <div style="display:flex;overflow-x:auto;gap:0;padding-bottom:8px;align-items:flex-start" id="timeline">
+        <style>
+          .tl-item{min-width:110px;max-width:110px;text-align:center;position:relative;padding:0 4px}
+          .tl-dot{width:12px;height:12px;border-radius:50%;margin:0 auto 4px;border:2px solid}
+          .tl-line{position:absolute;top:5px;left:50%;width:100%;height:2px;z-index:0}
+          .tl-year{font-size:9px;color:var(--gold);font-family:'Cinzel',serif;margin-bottom:3px}
+          .tl-norm{font-size:8px;color:#d8cfa8;line-height:1.4}
+          .tl-type{font-size:7px;padding:1px 4px;border:1px solid;letter-spacing:1px;margin-top:2px;display:inline-block}
+        </style>
+        <div class="tl-item"><div class="tl-line" style="background:#6a5a20"></div><div class="tl-dot" style="background:#c8a820;border-color:#c8a820;position:relative;z-index:1"></div><div class="tl-year">1907</div><div class="tl-norm">IV Conv. Aia</div><div class="tl-type" style="color:#a09060;border-color:#6a5a20">GUERRA</div></div>
+        <div class="tl-item"><div class="tl-line" style="background:#6a5a20"></div><div class="tl-dot" style="background:#c8a820;border-color:#c8a820;position:relative;z-index:1"></div><div class="tl-year">1935</div><div class="tl-norm">Patto Roerich</div><div class="tl-type" style="color:#d4a820;border-color:#d4a820">PIONIERE</div></div>
+        <div class="tl-item"><div class="tl-line" style="background:#6a5a20"></div><div class="tl-dot" style="background:#1a4a8a;border-color:#6a9fd8;position:relative;z-index:1"></div><div class="tl-year">1954</div><div class="tl-norm">Conv. Aia + I Prot.</div><div class="tl-type" style="color:#6a9fd8;border-color:#1a4a8a">CONFLITTI</div></div>
+        <div class="tl-item"><div class="tl-line" style="background:#6a5a20"></div><div class="tl-dot" style="background:#1a6b72;border-color:#70c8c8;position:relative;z-index:1"></div><div class="tl-year">1970</div><div class="tl-norm">UNESCO Traffico Illecito</div><div class="tl-type" style="color:#70c8c8;border-color:#1a6b72">TRAFFICO</div></div>
+        <div class="tl-item"><div class="tl-line" style="background:#6a5a20"></div><div class="tl-dot" style="background:#2c5f2d;border-color:#70c870;position:relative;z-index:1"></div><div class="tl-year">1972</div><div class="tl-norm">UNESCO Patrimonio Mondiale</div><div class="tl-type" style="color:#70c870;border-color:#2c5f2d">WHL</div></div>
+        <div class="tl-item"><div class="tl-line" style="background:#6a5a20"></div><div class="tl-dot" style="background:#1a6b72;border-color:#70c8c8;position:relative;z-index:1"></div><div class="tl-year">1977</div><div class="tl-norm">PA I art.53 / PA II art.16</div><div class="tl-type" style="color:#70c8c8;border-color:#1a6b72">GINEVRA</div></div>
+        <div class="tl-item"><div class="tl-line" style="background:#6a5a20"></div><div class="tl-dot" style="background:#1a6b72;border-color:#70c8c8;position:relative;z-index:1"></div><div class="tl-year">1995</div><div class="tl-norm">UNIDROIT Beni Rubati</div><div class="tl-type" style="color:#70c8c8;border-color:#1a6b72">RESTITUZ.</div></div>
+        <div class="tl-item"><div class="tl-line" style="background:#6a5a20"></div><div class="tl-dot" style="background:#1a4a8a;border-color:#6a9fd8;position:relative;z-index:1"></div><div class="tl-year">1998</div><div class="tl-norm">Statuto Roma CPI</div><div class="tl-type" style="color:#6a9fd8;border-color:#1a4a8a">PENALE</div></div>
+        <div class="tl-item"><div class="tl-line" style="background:#6a5a20"></div><div class="tl-dot" style="background:#1a4a8a;border-color:#6a9fd8;position:relative;z-index:1"></div><div class="tl-year">1999</div><div class="tl-norm">II Protocollo Aia</div><div class="tl-type" style="color:#6a9fd8;border-color:#1a4a8a">RINFORZATA</div></div>
+        <div class="tl-item"><div class="tl-line" style="background:#6a5a20"></div><div class="tl-dot" style="background:#2c5f2d;border-color:#70c870;position:relative;z-index:1"></div><div class="tl-year">2001</div><div class="tl-norm">UNESCO Subacqueo</div><div class="tl-type" style="color:#70c870;border-color:#2c5f2d">MARE</div></div>
+        <div class="tl-item"><div class="tl-line" style="background:#6a5a20"></div><div class="tl-dot" style="background:#2c5f2d;border-color:#70c870;position:relative;z-index:1"></div><div class="tl-year">2003</div><div class="tl-norm">UNESCO Immateriale</div><div class="tl-type" style="color:#70c870;border-color:#2c5f2d">INTANGIBILE</div></div>
+        <div class="tl-item"><div class="tl-line" style="background:#6a5a20"></div><div class="tl-dot" style="background:#8b2635;border-color:#d87070;position:relative;z-index:1"></div><div class="tl-year">2015</div><div class="tl-norm">Ris. ONU 2199</div><div class="tl-type" style="color:#d87070;border-color:#8b2635">TERRORISMO</div></div>
+        <div class="tl-item"><div class="tl-line" style="background:#6a5a20"></div><div class="tl-dot" style="background:#c8a820;border-color:#d4a820;position:relative;z-index:1"></div><div class="tl-year">2016</div><div class="tl-norm">UNESCO Mil. Manual + Caschi Blu</div><div class="tl-type" style="color:#d4a820;border-color:#c8a820">MILITARE</div></div>
+        <div class="tl-item"><div class="tl-line" style="background:#6a5a20"></div><div class="tl-dot" style="background:#8b2635;border-color:#d87070;position:relative;z-index:1"></div><div class="tl-year">2017</div><div class="tl-norm">Ris. ONU 2347 + Nicosia</div><div class="tl-type" style="color:#d87070;border-color:#8b2635">PENALE/ONU</div></div>
+        <div class="tl-item"><div class="tl-dot" style="background:#d4a820;border-color:#d4a820;position:relative;z-index:1"></div><div class="tl-year">2019</div><div class="tl-norm">NATO BI-SCD 086-005</div><div class="tl-type" style="color:#d4a820;border-color:#d4a820">NATO</div></div>
+      </div>
+    </div>
+    <div class="l-card">
+      <h3>SCEGLI IL TUO RUOLO</h3>
+      <p style="font-size:9px;color:#6a9fd8;margin-bottom:6px">🌐 claudiosanzo-ita.github.io/horizon-shield-wargame/</p>
+      <p>4 giocatori, uno per ruolo. Oppure Facilitatore per tutti.</p>
+      <div class="rpick">
+        <button class="rbtn rb-b" onclick="startGame(0)">🔵 BLUE CDR<br><span style="color:var(--muted)">NATO</span></button>
+        <button class="rbtn rb-t" onclick="startGame(1)">⭐ CPP ADVISOR<br><span style="color:var(--muted)">TPC</span></button>
+        <button class="rbtn rb-c" onclick="startGame(2)">🔹 CIMIC<br><span style="color:var(--muted)">NATO</span></button>
+        <button class="rbtn rb-r" onclick="startGame(3)">🔴 RED CMD<br><span style="color:var(--muted)">INSURGENTI</span></button>
+      </div>
+      <button class="sab" onclick="startGame(-1)">▶ FACILITATORE (tutti i ruoli)</button>
+      <button class="sab" style="margin-top:6px;background:#2a1a2a;border-color:#c870c8;color:#c870c8" onclick="startGame(-2)">🤖 SOLITARIO (Bot Red CMD)</button>
+    </div>
+    <div class="l-card">
+      <h3>MECCANICHE v2.0</h3>
+      <p style="text-align:left">
+        🌫 <b>Fog of War</b> — 2 siti nascosti da scoprire<br>
+        ⏱ <b>Countdown</b> — timer per fase attivo<br>
+        💀 <b>Traffico illecito</b> — saccheggio finanzia nemico<br>
+        🎴 <b>Carte evento</b> — terremoto, giornalista, mercante<br>
+        ⚖ <b>Dilemma SOFA</b> — assenza copertura TPC<br><br>
+        🎲 CRT + Dadi · 🔒 Console private · 🤖 Bot Red<br>
+        ⚡ White Cell · 🃏 20 Carte OP · 🗺 Terreno tattico<br>
+        🏛 4 beni culturali · 4 ruoli · 4 fasi
+      </p>
+      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:8px;justify-content:center">
+        <span class="info-chip">v2.0</span><span class="info-chip">PROTOTIPO</span><span class="info-chip">CPP WARGAME</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- GAME -->
+<div id="game-root">
+  <div class="g-hdr">
+    <div class="g-title">OPERATION HORIZON SHIELD<span>CPP WARGAME PRO v3.0 · TEATRO TALOS · CRT+BOT+CONSOLE</span></div>
+    <div style="display:flex;align-items:center;gap:5px">
+      <span style="font-size:7px;color:var(--khaki);letter-spacing:1px" id="phase-label">FASE 1/4</span>
+      <div class="pdot active" id="pd1"></div><div class="pdot" id="pd2"></div><div class="pdot" id="pd3"></div><div class="pdot" id="pd4"></div>
+    </div>
+    <div class="tw">
+      <span style="font-size:8px;color:var(--khaki)">⏱</span>
+      <div class="td" id="td">4:00</div>
+      <div><div class="tbt"><div class="tbf" id="tbf" style="width:100%"></div></div><div style="font-size:7px;color:var(--muted);text-align:right" id="tl">PIANIFICAZIONE</div></div>
+    </div>
+    <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap">
+      <div class="myrole" id="mrb" style="display:none"></div>
+      <div class="tbadge" id="tbadge">TURNO 1 · PIANIFICAZIONE</div>
+    </div>
+  </div>
+
+  <div class="g-layout">
+    <div class="lp">
+      <div><div class="stitle">FORZE IN CAMPO</div><div id="rcards"></div></div>
+      <div><div class="stitle">BENI CULTURALI</div><div id="hssb"></div></div>
+      <div><div class="stitle">TRAFFICO ILLECITO</div><div id="tpanel"><div class="tpp">Nessun saccheggio.</div></div></div>
+    </div>
+
+    <div class="mw">
+      <svg class="ms" id="gmap" viewBox="0 0 700 500" preserveAspectRatio="xMidYMid meet">
+        <text class="cl" x="35" y="10">A</text><text class="cl" x="95" y="10">B</text><text class="cl" x="155" y="10">C</text><text class="cl" x="215" y="10">D</text><text class="cl" x="275" y="10">E</text><text class="cl" x="335" y="10">F</text><text class="cl" x="395" y="10">G</text><text class="cl" x="455" y="10">H</text><text class="cl" x="515" y="10">I</text><text class="cl" x="575" y="10">L</text><text class="cl" x="635" y="10">M</text>
+        <text class="cl" x="8" y="55">1</text><text class="cl" x="8" y="115">2</text><text class="cl" x="8" y="175">3</text><text class="cl" x="8" y="235">4</text><text class="cl" x="8" y="295">5</text><text class="cl" x="8" y="355">6</text><text class="cl" x="8" y="415">7</text><text class="cl" x="8" y="475">8</text>
+        <ellipse cx="100" cy="400" rx="70" ry="40" class="tw2"/><text x="100" y="405" text-anchor="middle" font-size="8" fill="#4a7a90" font-family="Share Tech Mono">LAGO TALOS</text>
+        <rect x="580" y="0" width="120" height="180" class="tw2"/><text x="640" y="90" text-anchor="middle" font-size="8" fill="#4a7a90" font-family="Share Tech Mono">MARE</text>
+        <ellipse cx="200" cy="120" rx="90" ry="55" class="tf"/>
+        <text x="200" y="118" text-anchor="middle" font-size="7" fill="#5a8a4a" font-family="Share Tech Mono">FORESTA (-1PA)</text>
+        <ellipse cx="500" cy="380" rx="70" ry="45" class="tf"/>
+        <ellipse cx="420" cy="170" rx="50" ry="30" fill="#9a8040" opacity=".4"/>
+        <text x="420" y="174" text-anchor="middle" font-size="6" fill="#8a7030" font-family="Share Tech Mono">COLLINA (+DEF)</text>
+        <rect x="280" y="180" width="110" height="80" class="tu" rx="4"/><text x="335" y="220" text-anchor="middle" font-size="9" fill="#5a4010" font-family="Share Tech Mono" font-weight="bold">KHERBA</text>
+        <path d="M30 250 L280 250 L390 220 L580 220" class="tr" stroke-dasharray="8 3"/><path d="M335 180 L335 30" class="tr"/><path d="M335 260 L335 490" class="tr"/>
+        <!-- HS-0 Cittadella visible -->
+        <g class="hg" id="hs-0" onclick="selHS(0)"><circle cx="335" cy="110" r="22" fill="rgba(200,170,50,.15)" stroke="#c8a820" stroke-width="1.5" stroke-dasharray="4 2"/><rect x="321" y="96" width="28" height="28" fill="#c87020" rx="2"/><text x="335" y="114" text-anchor="middle" font-size="13" fill="#f0e8cc" font-family="Share Tech Mono">🏛</text><text x="335" y="144" text-anchor="middle" font-size="7" fill="#c8a820" font-family="Share Tech Mono">CITTADELLA</text><text x="335" y="154" text-anchor="middle" font-size="6" fill="#c87020" font-family="Share Tech Mono" id="hl-0">[MINACCIATO]</text></g>
+        <!-- HS-1 Moschea visible -->
+        <g class="hg" id="hs-1" onclick="selHS(1)"><circle cx="140" cy="240" r="20" fill="rgba(26,74,138,.15)" stroke="#1a4a8a" stroke-width="1.5" stroke-dasharray="4 2"/><rect x="127" y="227" width="26" height="26" fill="#1a4a8a" rx="2"/><text x="140" y="244" text-anchor="middle" font-size="13" fill="#f0e8cc" font-family="Share Tech Mono">🕌</text><text x="140" y="270" text-anchor="middle" font-size="7" fill="#6a9fd8" font-family="Share Tech Mono">MOSCHEA</text><text x="140" y="280" text-anchor="middle" font-size="6" fill="#6a9fd8" font-family="Share Tech Mono" id="hl-1">[PROTETTO]</text></g>
+        <!-- HS-2 Scavi FOG -->
+        <g id="fog-2"><circle cx="520" cy="280" r="20" fill="rgba(60,60,60,.3)" stroke="#555" stroke-width="1.5" stroke-dasharray="4 2"/><text x="520" y="285" text-anchor="middle" font-size="16" fill="#666" font-family="Share Tech Mono">?</text><text x="520" y="305" text-anchor="middle" font-size="7" fill="#555" font-family="Share Tech Mono">SCONOSCIUTO</text></g>
+        <g class="hg" id="hs-2" onclick="selHS(2)" style="display:none"><circle cx="520" cy="280" r="20" fill="rgba(200,112,32,.15)" stroke="#c87020" stroke-width="1.5" stroke-dasharray="4 2"/><rect x="507" y="267" width="26" height="26" fill="#c87020" rx="2"/><text x="520" y="284" text-anchor="middle" font-size="13" fill="#f0e8cc" font-family="Share Tech Mono">⛏</text><text x="520" y="310" text-anchor="middle" font-size="7" fill="#c87020" font-family="Share Tech Mono">SCAVI</text><text x="520" y="320" text-anchor="middle" font-size="6" fill="#c87020" font-family="Share Tech Mono" id="hl-2">[MINACCIATO]</text></g>
+        <!-- HS-3 Museo FOG -->
+        <g id="fog-3"><circle cx="280" cy="420" r="20" fill="rgba(60,60,60,.3)" stroke="#555" stroke-width="1.5" stroke-dasharray="4 2"/><text x="280" y="425" text-anchor="middle" font-size="16" fill="#666" font-family="Share Tech Mono">?</text><text x="280" y="445" text-anchor="middle" font-size="7" fill="#555" font-family="Share Tech Mono">SCONOSCIUTO</text></g>
+        <g class="hg" id="hs-3" onclick="selHS(3)" style="display:none"><circle cx="280" cy="420" r="20" fill="rgba(26,74,138,.15)" stroke="#1a4a8a" stroke-width="1.5" stroke-dasharray="4 2"/><rect x="267" y="407" width="26" height="26" fill="#1a4a8a" rx="2"/><text x="280" y="424" text-anchor="middle" font-size="13" fill="#f0e8cc" font-family="Share Tech Mono">🏺</text><text x="280" y="450" text-anchor="middle" font-size="7" fill="#6a9fd8" font-family="Share Tech Mono">MUSEO</text><text x="280" y="460" text-anchor="middle" font-size="6" fill="#6a9fd8" font-family="Share Tech Mono" id="hl-3">[PROTETTO]</text></g>
+        <!-- Units -->
+        <g class="ut" id="u-B1" onclick="selU('B1')"><rect x="42" y="182" width="36" height="36" class="ub" rx="3"/><text class="ul" x="60" y="204">INF</text><text class="ul" x="60" y="192" font-size="5">B-1</text></g>
+        <g class="ut" id="u-B2" onclick="selU('B2')"><rect x="42" y="272" width="36" height="36" class="ub" rx="3"/><text class="ul" x="60" y="294">APC</text><text class="ul" x="60" y="282" font-size="5">B-2</text></g>
+        <g class="ut" id="u-TPC" onclick="selU('TPC')"><rect x="142" y="282" width="36" height="36" class="utpc" rx="3"/><text class="ul" x="160" y="304" fill="#d4a820">TPC</text><text class="ul" x="160" y="292" font-size="5" fill="#d4a820">CPP</text></g>
+        <g class="ut" id="u-R1" onclick="selU('R1')"><rect x="442" y="122" width="36" height="36" class="ur" rx="3"/><text class="ul" x="460" y="144">MIL</text><text class="ul" x="460" y="132" font-size="5">R-1</text></g>
+        <g class="ut" id="u-R2" onclick="selU('R2')"><rect x="402" y="272" width="36" height="36" class="ur" rx="3"/><text class="ul" x="420" y="294">IDF</text><text class="ul" x="420" y="282" font-size="5">R-2</text></g>
+        <!-- Hague rings -->
+        <circle cx="140" cy="240" r="40" fill="none" stroke="#1a4a8a" stroke-width="1" stroke-dasharray="6 4" opacity=".4"/>
+        <circle cx="280" cy="420" r="40" fill="none" stroke="#1a4a8a" stroke-width="1" stroke-dasharray="6 4" opacity=".4" id="hr3" style="display:none"/>
+        <!-- Traffic markers -->
+        <g id="tm-0" style="display:none"><circle cx="335" cy="84" r="9" fill="#d87070" opacity=".85"/><text x="335" y="89" text-anchor="middle" font-size="9" fill="white" font-family="Share Tech Mono">💀</text></g>
+        <g id="tm-2" style="display:none"><circle cx="548" cy="280" r="9" fill="#d87070" opacity=".85"/><text x="548" y="285" text-anchor="middle" font-size="9" fill="white" font-family="Share Tech Mono">💀</text></g>
+        <!-- Compass -->
+        <g transform="translate(655,445)"><circle r="17" fill="rgba(20,25,15,.7)" stroke="#6a5a20" stroke-width="1"/><text x="0" y="-6" text-anchor="middle" font-size="7" fill="#c8b560" font-family="Share Tech Mono">N</text><text x="0" y="12" text-anchor="middle" font-size="6" fill="#a09060" font-family="Share Tech Mono">S</text><text x="-10" y="4" text-anchor="middle" font-size="6" fill="#a09060" font-family="Share Tech Mono">O</text><text x="10" y="4" text-anchor="middle" font-size="6" fill="#a09060" font-family="Share Tech Mono">E</text><line x1="0" y1="-12" x2="0" y2="-5" stroke="#c8b560" stroke-width="1.5"/><line x1="0" y1="5" x2="0" y2="12" stroke="#a09060" stroke-width="1"/></g>
+        <!-- Legend -->
+        <g transform="translate(20,15)"><rect x="0" y="0" width="7" height="7" fill="#1a3a6b" stroke="#6a9fd8" stroke-width=".5"/><text x="11" y="7" font-size="7" fill="#a09060" font-family="Share Tech Mono">BLU</text><rect x="0" y="12" width="7" height="7" fill="#6b1a1a" stroke="#d87070" stroke-width=".5"/><text x="11" y="19" font-size="7" fill="#a09060" font-family="Share Tech Mono">ROSSO</text><rect x="0" y="24" width="7" height="7" fill="#c87020"/><text x="11" y="31" font-size="7" fill="#a09060" font-family="Share Tech Mono">MINACCIATO</text><rect x="0" y="36" width="7" height="7" fill="#1a4a8a"/><text x="11" y="43" font-size="7" fill="#a09060" font-family="Share Tech Mono">PROTETTO</text><rect x="0" y="48" width="7" height="7" fill="#555"/><text x="11" y="55" font-size="7" fill="#a09060" font-family="Share Tech Mono">FOG OF WAR</text></g>
+      </svg>
+    </div>
+
+    <div class="rp">
+      <div id="eslot"></div>
+      <div><div class="stitle">SITUAZIONE OPERATIVA</div>
+        <div class="sitrep" id="sitrep">
+          <div class="sl"><span class="st">06:00</span>Missione HORIZON SHIELD PRO v3.0 attivata. CRT attiva.</div>
+          <div class="sl legal"><span class="st">06:05</span>Conv. Aia 1954 applicabile. Forze BLU vincolate da obblighi CPP.</div>
+          <div class="sl alert"><span class="st">06:10</span>⚠ FOG OF WAR: 2 siti non mappati. CPP Advisor deve effettuare ricognizione (1 PA).</div>
+          <div class="sl alert"><span class="st">06:15</span>R-1 avanza verso Cittadella.</div>
+          <div class="sl neutral"><span class="st">06:20</span>Timer attivo: 4 min. Evento in arrivo.<span class="blink">▌</span></div>
+          <div class="sl legal"><span class="st">06:25</span>Caschi Blu UNESCO in standby. INTERPOL Works of Art Unit allertata. Coordinamento TPC attivo.</div>
+          <div class="sl legal"><span class="st">06:30</span>Quadro normativo attivo: Conv.Aia 1954 · II Prot.1999 · PA I/II · DIU consuetudinario · CPI · UNESCO 1970 · Ris.ONU 2199/2347 · NATO BI-SCD 086-005.</div>
+        </div>
+      </div>
+      <div><div class="stitle">PUNTEGGI</div>
+        <div class="sg"><div class="sc"><div class="sv" id="sb">0</div><div class="sl2">BLU/TPC</div></div><div class="sc"><div class="sv" id="sr">0</div><div class="sl2">ROSSO</div></div></div>
+      </div>
+      <div><div class="stitle">COMPLIANCE DIU</div>
+        <div class="lbw"><div class="lbr"><span style="color:#1a6b72">PROTEZIONE</span><span id="lpv">0%</span></div><div class="lbt"><div class="lbf lbp" id="lp" style="width:0%"></div></div></div>
+        <div class="lbw"><div class="lbr"><span style="color:#8b1a1a">VIOLAZIONI</span><span id="lvv">0%</span></div><div class="lbt"><div class="lbf lbv" id="lv" style="width:0%"></div></div></div>
+        <div class="lbw"><div class="lbr"><span style="color:#d87070">TRAFFICO</span><span id="ltv">0%</span></div><div class="lbt"><div class="lbf lbtr" id="lt" style="width:0%"></div></div></div>
+      </div>
+      <div><div class="stitle">SITO SELEZIONATO</div>
+        <div class="hsd" id="hsd"><div class="hdn" style="color:var(--muted)">— Cliccare un sito sulla mappa —</div><div style="font-size:9px;color:var(--muted)">🏛 🕌 visibili &nbsp; ⛏ 🏺 FOG — ricognizione CPP necessaria</div></div>
+      </div>
+      <div><div class="stitle" id="atitle">AZIONI — SELEZIONA RUOLO</div><div id="apanel"><div style="font-size:9px;color:var(--muted);padding:5px">Seleziona un ruolo nel pannello sinistro.</div></div></div>
+      <div>
+        <button id="legal-toggle" onclick="toggleLegal()">⚖ QUADRO NORMATIVO APPLICABILE ▾</button>
+        <div id="legal-panel" class="legal-panel" style="display:none">
+          <div class="lp-title">⚖ CONVENZIONI E TRATTATI INTERNAZIONALI — TUTELA BENI CULTURALI</div>
+
+          <div class="lp-item" id="norm-roerich"><span class="norm">🕊 PATTO ROERICH (1935)</span><br><span class="desc">Washington. Primo trattato internazionale dedicato alla protezione di istituzioni artistiche, scientifiche e monumenti storici. Introduce la Bandiera della Pace (cerchio rosso su bianco). Antesignano diretto della Conv. Aia 1954.</span></div>
+
+          <div class="lp-item" id="norm-hague54"><span class="norm">🏛 CONV. AIA (1954) — CONFLITTI ARMATI</span><br><span class="desc">Primo strumento multilaterale specifico per la protezione dei beni culturali durante conflitti armati. Protezione generale (art.4): no atti ostili, no utilizzo militare. Protezione speciale (art.8): rifugi e centri monumentali. Obbligo preparazione in tempo di pace (art.3). No requisizione (art.4(3)). 133 Stati Parte.</span></div>
+
+          <div class="lp-item" id="norm-prot1"><span class="norm">📜 I PROTOCOLLO AIA (1954)</span><br><span class="desc">Beni in territorio occupato: divieto assoluto di esportazione illecita. Obbligo di sequestro e restituzione post-conflitto. Primo strumento di contrasto al saccheggio in contesti di occupazione militare.</span></div>
+
+          <div class="lp-item" id="norm-unesco70"><span class="norm">🔄 CONV. UNESCO (1970) — TRAFFICO ILLECITO</span><br><span class="desc">Misure per vietare e impedire l'illecita importazione, esportazione e trasferimento di beni culturali. Obbligo di restituzione, divieto acquisizione beni trafugati, cooperazione internazionale. Base giuridica per le Purple Notice INTERPOL.</span></div>
+
+          <div class="lp-item" id="norm-unesco72"><span class="norm">🌍 CONV. UNESCO (1972) — PATRIMONIO MONDIALE</span><br><span class="desc">Istituzione della World Heritage List (Lista del Patrimonio Mondiale). Obblighi di protezione per i siti iscritti anche in tempo di conflitto. I siti WHL godono di protezione rafforzata de facto nell'opinione internazionale.</span></div>
+
+          <div class="lp-item" id="norm-unidroit"><span class="norm">⚖ CONV. UNIDROIT (1995) — BENI RUBATI</span><br><span class="desc">Beni culturali rubati o illecitamente esportati: diritto di restituzione, obblighi per acquirenti di buona fede, termini di prescrizione specifici. Complementare alla Conv. UNESCO 1970. Applicazione diretta al traffico da saccheggio bellico.</span></div>
+
+          <div class="lp-item" id="norm-prot2"><span class="norm">🛡 II PROTOCOLLO AIA (1999)</span><br><span class="desc">Protezione rafforzata (artt.10-14): beni di importanza eccezionale, non utilizzati a fini militari. Precauzioni nel targeting (art.7). Precauzioni contro gli effetti (art.8). Responsabilità penale individuale (artt.15-17). 85 Stati Parte.</span></div>
+
+          <div class="lp-item" id="norm-unesco2001"><span class="norm">🌊 CONV. UNESCO (2001) — PATRIMONIO SUBACQUEO</span><br><span class="desc">Protezione del patrimonio culturale subacqueo da attività militari e commerciali. Applicabile in contesti costieri e marittimi del Teatro Talos (Mar di Talos identificato sulla mappa).</span></div>
+
+          <div class="lp-item" id="norm-unesco2003"><span class="norm">🎭 CONV. UNESCO (2003) — PATRIMONIO IMMATERIALE</span><br><span class="desc">Salvaguardia del patrimonio culturale immateriale: tradizioni orali, arti dello spettacolo, pratiche sociali. La distruzione deliberata di questo patrimonio costituisce una forma di violenza culturale rilevante ai fini CPP.</span></div>
+
+          <div class="lp-item" id="norm-nicosia"><span class="norm">🏛 CONV. NICOSIA (2017) — REATI CULTURALI</span><br><span class="desc">Convenzione del Consiglio d'Europa sui reati relativi ai beni culturali. Prima convenzione penale europea dedicata: furto, scavo illecito, traffico, falsificazione, distruzione. Collega il traffico di beni culturali al finanziamento del terrorismo (art.3).</span></div>
+
+          <div class="lp-item" id="norm-hague1907"><span class="norm">⚔ IV CONV. AIA (1907) — GUERRA TERRESTRE</span><br><span class="desc">Artt.27 e 56 del Regolamento: rispetto di edifici dedicati alla religione, arte, scienza, assistenza; divieto di sequestro, distruzione e danneggiamento dei beni dei comuni e delle istituzioni culturali. Norma consuetudinaria consolidata.</span></div>
+
+          <div class="lp-item" id="norm-pa1"><span class="norm">🌐 PROT. AGG. I/1977 — ART.53</span><br><span class="desc">Conflitti armati internazionali: vietati atti ostili contro monumenti storici, opere d'arte, luoghi di culto che costituiscono il patrimonio culturale o spirituale dei popoli. Vietato utilizzarli a sostegno degli sforzi militari.</span></div>
+
+          <div class="lp-item" id="norm-pa2"><span class="norm">🔴 PROT. AGG. II/1977 — ART.16</span><br><span class="desc">Conflitti armati non internazionali: identica protezione dell'art.53 PA/I. Applicabile agli insurgenti del Teatro Talos. Vietati atti di ostilità contro monumenti storici, opere d'arte e luoghi di culto.</span></div>
+
+          <div class="lp-item" id="norm-cihl"><span class="norm">📘 DIU CONSUETUDINARIO CICR (2005)</span><br><span class="desc">Regola 38: rispetto beni culturali. Regola 39: divieto utilizzo militare. Regola 40: divieto saccheggio e furto. Applicabili a tutte le parti del conflitto, inclusi attori non statali. Vincolanti indipendentemente dalle ratifiche convenzionali.</span></div>
+
+          <div class="lp-item" id="norm-icc"><span class="norm">⚖ STATUTO ROMA (1998) — CPI</span><br><span class="desc">Art.8(2)(b)(ix): crimine di guerra in conflitti internazionali — attacchi deliberati contro edifici dedicati alla religione, arte, scienza, monumenti storici. Art.8(2)(e)(iv): conflitti non internazionali. Precedente Al Mahdi ICC-01/12-01/15 (2016): prima condanna autonoma.</span></div>
+
+          <div class="lp-item" id="norm-unsc2199"><span class="norm">🔒 RIS. ONU 2199/2015</span><br><span class="desc">Finanziamento al terrorismo tramite saccheggio e commercio di beni culturali: obbligo di contrasto per tutti gli Stati. Collegamento esplicito ISIS-traffico beni culturali. Base per il blocco dei canali finanziari degli insurgenti.</span></div>
+
+          <div class="lp-item" id="norm-unsc2347"><span class="norm">🌐 RIS. ONU 2347/2017</span><br><span class="desc">Prima risoluzione del Consiglio di Sicurezza ONU dedicata esclusivamente alla tutela del patrimonio culturale in conflitto armato. Meccanismi di monitoraggio, reporting e cooperazione internazionale. Ruolo centrale di UNESCO e Caschi Blu.</span></div>
+
+          <div class="lp-item" id="norm-nato"><span class="norm">🎖 NATO BI-SCD 086-005 (2019)</span><br><span class="desc">Direttiva NATO CPP: obbligo di integrazione della protezione del patrimonio culturale nei piani operativi. Ruolo del Cultural Property Protection Officer (CPPO) nello staff. Coordinamento con Caschi Blu e Blue Shield.</span></div>
+
+          <div class="lp-item" id="norm-unescomil"><span class="norm">📋 UNESCO MIL. MANUAL (2016)</span><br><span class="desc">Military Manual on the Protection of Cultural Property: procedure operative standard, liste no-strike, schede sito, coordinamento CIMIC-CHO. Elaborato con contributo determinante dell'Italia e dei Carabinieri TPC.</span></div>
+
+          <div class="lp-item" id="norm-natmanuals"><span class="norm">📖 MANUALI NAZIONALI</span><br><span class="desc">US DoD Law of War Manual (2023) §§5.17-5.18. UK Joint Service Manual on the Law of Armed Conflict (JSP 383). IT Manuale SMD-G-011: norme operative nazionali CPP per le Forze Armate italiane.</span></div>
+        </div>
+      </div>
+      <div><div class="stitle">LOG ORDINI</div><div class="ol2" id="olog"><div class="ole" style="color:var(--muted)">— Nessun ordine —</div></div></div>
+      <div>
+        <button class="nb" onclick="nextPhase()">▶ FASE SUCCESSIVA</button>
+        <button class="nb" style="margin-top:3px;background:#1a1a10;font-size:8px" onclick="goLanding()">↩ MENU</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SOFA MODAL -->
+<div id="sofa-modal">
+  <div class="sb">
+    <div style="background:#1a0a00;border:1px solid #c87020;padding:9px 13px;margin-bottom:14px">
+      <div style="font-size:8px;letter-spacing:3px;color:#c87020;text-transform:uppercase;margin-bottom:2px">⚠ EVENTO CRITICO — FASE INGAGGIO</div>
+      <div style="font-family:'Cinzel',serif;font-size:15px;color:#d4a820;letter-spacing:2px">ASSENZA DI COPERTURA GIURIDICA</div>
+    </div>
+    <div style="font-size:10px;color:#e8e0c8;line-height:1.8;margin-bottom:12px">Il CPP Advisor TPC ha individuato un deposito clandestino di reperti saccheggiati. Il recupero immediato sarebbe possibile — ma il Teatro Talos non ha SOFA ratificato con l'Italia.</div>
+    <div style="border:1px solid #1a4a8a;background:rgba(26,74,138,.1);padding:9px 13px;margin-bottom:12px">
+      <div style="font-size:8px;color:#6a9fd8;letter-spacing:2px;text-transform:uppercase;margin-bottom:5px">⚖ ART. 98 STATUTO ROMA / SOFA / MAECI</div>
+      <div style="font-size:9px;color:#cadcfc;line-height:1.8">Senza SOFA ratificato il personale TPC è esposto alla giurisdizione penale locale. Art. 98 Statuto Roma non si applica automaticamente. Portale MAECI: in teatri non strutturati senza accordo bilaterale, l'Arma opera senza garanzia di immunità funzionale.</div>
+    </div>
+    <div style="font-size:8px;color:#e8c840;letter-spacing:2px;text-transform:uppercase;margin-bottom:7px">DELIBERAZIONE — TUTTI I RUOLI DEVONO CONCORDARE</div>
+    <button class="sc2" style="border-left:3px solid #1a6b72" onclick="sofaChoice('intervento')"><span style="color:#70c8c8;font-weight:bold">A — INTERVENIRE</span> (senza SOFA)<br><span style="color:#a09060;font-size:9px">Recupero reperti. Esposizione giuridica TPC. +30 BLU, +20% violazioni protocollo.</span></button>
+    <button class="sc2" style="border-left:3px solid #d4a820" onclick="sofaChoice('richiestaSOFA')"><span style="color:#d4a820;font-weight:bold">B — SOSPENDERE E RICHIEDERE COPERTURA MAECI</span><br><span style="color:#a09060;font-size:9px">Procedura corretta. Ritardo 48h. Reperti a rischio. +15 BLU, piena compliance.</span></button>
+    <button class="sc2" style="border-left:3px solid #6a9fd8" onclick="sofaChoice('ONU')"><span style="color:#6a9fd8;font-weight:bold">C — DELEGARE A UNESCO/INTERPOL</span><br><span style="color:#a09060;font-size:9px">Nessuna esposizione TPC. Intervento più lento. +10 BLU, +25% compliance.</span></button>
+    <button class="sc2" style="border-left:3px solid #5a1010" onclick="sofaChoice('rinuncia')"><span style="color:#d87070;font-weight:bold">D — NON INTERVENIRE</span><br><span style="color:#a09060;font-size:9px">Nessun rischio personale. Reperti dispersi. 0 punti. Difendibile operativamente.</span></button>
+  </div>
+</div>
+
+<script>
+// QR
+
+
+// STATE
+const G={
+  phase:0,turn:1,selRole:-1,selHS:-1,
+  scores:{blue:0,red:0},ap:[3,3,3,3],compliance:0,violations:0,trafficking:0,actCount:0,
+  myRole:-1,
+  phases:['PIANIFICAZIONE','MANOVRA','INGAGGIO','DEBRIEFING'],
+  phaseSec:[240,180,180,120],timerSec:240,timerInt:null,
+  fog:[true,true,false,false],
+  trPhases:[0,0,0,0],trActive:[false,false,false,false],
+  sofaDone:false,sofaVerdict:'',
+  curEvent:null,redBonus:0,journalistOn:false,
+  cbDeployed:[false,false,false,false],  // Caschi Blu deployed on each site
+  cbBriefed:false,                        // CPP Advisor has briefed CB
+  cbCorridor:false,                       // Blue CDR has secured corridor
+  interpol:0,                             // Purple Notices issued
+  trafficBlocked:false,                   // INTERPOL has blocked trafficking
+  cppChainComplete:false,                 // Full CPP chain completed
+  hs:[
+    {name:'CITTADELLA DI TALOS',type:'Sito UNESCO',status:'threatened',desc:'Fortezza medievale sec. XI. UNESCO 1987.',hague:'Art. 4(1) Conv. Aia: vietato qualsiasi atto ostile.',threat:'R-1 in avvicinamento. Rischio posizione difensiva.'},
+    {name:'MOSCHEA STORICA',type:'Protezione speciale',status:'protected',desc:'Sec. XIII sotto protezione speciale. Scudo Blu affisso.',hague:'Art. 8 Conv. Aia: protezione speciale. II Prot. art. 10.',threat:'Nessuna minaccia immediata.'},
+    {name:'SCAVI ARCHEOLOGICI',type:'Sito protetto',status:'threatened',desc:'Scavo II sec. a.C. 847 elementi documentati TPC.',hague:'Regola 40 DIU: vietato il saccheggio.',threat:'Posizione non nota. Richiedere ricognizione CPP.'},
+    {name:'MUSEO NAZIONALE',type:'Bene protetto',status:'protected',desc:'12.000 reperti. Evacuazione 70% completata.',hague:'Art. 4 e 4(3) Conv. Aia: no requisizione.',threat:'Accesso viario compromesso.'}
+  ]
+};
+
+// EVENTS
+const EVS=[
+  {title:'🌍 TERREMOTO — MAGNITUDO 4.2',body:'Sisma nel settore nord. Un sito nascosto potrebbe essere esposto.',effect:'+1 PA al CPP Advisor. Un sito FOG rivelato d\'urgenza.',fn(){
+    G.ap[1]=Math.min(6,G.ap[1]+1);
+    const i=G.fog.findIndex((r,j)=>!r);
+    if(i>=0){reveal(i);sit(`[EVENTO] Terremoto: ${G.hs[i].name} esposto e mappato.`,'neutral');}
+    else sit('[EVENTO] Terremoto: nessun sito aggiuntivo da mappare.','neutral');
+  }},
+  {title:'📸 GIORNALISTA INTERNAZIONALE NELL\'AO',body:'Corrispondente di guerra ha filmato movimenti vicino a siti protetti.',effect:'Ogni violazione questa fase ha doppio impatto mediatico.',fn(){G.journalistOn=true;sit('[EVENTO] Giornalista nell\'AO. Violazioni amplificate mediaticamente.','alert');}},
+  {title:'💼 MERCANTE D\'ARTE — OFFERTA ILLECITA',body:'Intermediario offre 50.000€ per reperti dagli Scavi. Pipeline attiva.',effect:'Traffico +15% se Scavi minacciati. Red CMD +1 PA.',fn(){
+    if(G.hs[2].status==='threatened'){G.trafficking=Math.min(100,G.trafficking+15);updTr();}
+    G.ap[3]=Math.min(6,G.ap[3]+1);G.redBonus++;sit('[EVENTO] Mercante d\'arte attivo. Traffico +15%. Red +1 PA.','alert');
+  }},
+  {title:'🕊 MEDIATORE ONU NELL\'AO',body:'Rappresentante ONU chiede 48h di cessate il fuoco per evacuare i beni.',effect:'Tutte le fazioni +1 PA. Atmosfera diplomatica attiva.',fn(){G.ap=[G.ap[0]+1,G.ap[1]+1,G.ap[2]+1,G.ap[3]+1];sit('[EVENTO] Mediatore ONU: +1 PA per tutti.','success');}},
+  {title:'⚔ RINFORZO NEMICO IN ARRIVO',body:'Convoglio di 40 veicoli armati diretto verso Kherba. ETA: fine fase.',effect:'Red CMD +2 PA bonus nella prossima fase.',fn(){G.redBonus+=2;sit('[EVENTO] Rinforzo nemico. Red +2 PA prossima fase.','alert');}},
+  {title:'🔍 FONTE INTELLIGENCE TPC',body:'Informatore locale fornisce coordinate precise di deposito clandestino.',effect:'CPP Advisor rivela sito FOG. +20 BLU.',fn(){
+    const i=G.fog.findIndex((r,j)=>!r);
+    if(i>=0){reveal(i);addSc('blue',20);sit(`[EVENTO] Intel TPC: ${G.hs[i].name} mappato. +20 BLU.`,'success');}
+    else{addSc('blue',10);sit('[EVENTO] Intel TPC: tutti mappati. +10 BLU.','success');}
+  }}
+];
+
+function drawEvent(){
+  const e=EVS[Math.floor(Math.random()*EVS.length)];
+  G.curEvent=e;
+  document.getElementById('eslot').innerHTML=`<div class="ec"><div class="et">${e.title}</div><div class="eb">${e.body}</div><div class="ee">⚡ ${e.effect}</div><button onclick="applyEvent()" style="background:var(--mil-green);border:1px solid var(--khaki);color:var(--gold);font-family:'Share Tech Mono',monospace;font-size:9px;padding:4px 10px;cursor:pointer;margin-top:7px;letter-spacing:1px">APPLICARE EVENTO</button></div>`;
+  sit(`[EVENTO] ${e.title}`,'event');
+}
+function applyEvent(){if(!G.curEvent)return;G.curEvent.fn();document.getElementById('eslot').innerHTML='';G.curEvent=null;renderRC();if(G.selRole>=0)renderActs();}
+
+// FOG
+function reveal(idx){
+  G.fog[idx]=true;
+  const f=document.getElementById(`fog-${idx}`),r=document.getElementById(`hs-${idx}`);
+  if(f)f.style.display='none';if(r)r.style.display='';
+  if(idx===3){const h=document.getElementById('hr3');if(h)h.style.display='';}
+  sit(`[TPC] ${G.hs[idx].name} MAPPATO. Aggiunto alla lista no-strike.`,'success');
+  renderHSSB();
+}
+
+// TRAFFICKING
+function chkTraffic(){
+  [0,2].forEach(idx=>{
+    if(G.hs[idx].status==='threatened'){
+      G.trPhases[idx]++;
+      if(G.trPhases[idx]>=1&&!G.trActive[idx]){
+        G.trActive[idx]=true;G.trafficking=Math.min(100,G.trafficking+20);G.redBonus++;
+        const m=document.getElementById(`tm-${idx}`);if(m)m.style.display='';
+        sit(`[INTERPOL] Saccheggio attivo su ${G.hs[idx].name}. Traffico +20%. Red +1 PA bonus.`,'alert');
+        updTr();updTPnl();
+      }
+    } else G.trPhases[idx]=0;
+  });
+}
+function updTr(){document.getElementById('lt').style.width=G.trafficking+'%';document.getElementById('ltv').textContent=G.trafficking+'%';}
+function updTPnl(){
+  const p=document.getElementById('tpanel'),a=G.trActive.filter(Boolean).length;
+  p.innerHTML=a===0?'<div class="tpp">Nessun saccheggio.</div>':
+    `<div class="ta">⚠ ${a} sito/i in saccheggio<span class="tpip"></span><br>Red bonus: +${G.redBonus} PA accumulati</div>`;
+}
+
+// TIMER
+function startTimer(){
+  clearInterval(G.timerInt);G.timerSec=G.phaseSec[G.phase];
+  const tot=G.timerSec;updTD();
+  G.timerInt=setInterval(()=>{
+    G.timerSec--;updTD();
+    const pct=(G.timerSec/tot)*100;
+    const b=document.getElementById('tbf');if(b)b.style.width=pct+'%';
+    if(G.timerSec<=30){document.getElementById('td').classList.add('urgent');if(b)b.classList.add('urgent');}
+    if(G.timerSec<=0){clearInterval(G.timerInt);sit('[⏱] TEMPO SCADUTO — Fase avanzata.','alert');setTimeout(()=>nextPhase(),1200);}
+  },1000);
+}
+function updTD(){const m=Math.floor(G.timerSec/60),s=G.timerSec%60,el=document.getElementById('td');if(el)el.textContent=`${m}:${String(s).padStart(2,'0')}`;}
+function pauseTimer(){clearInterval(G.timerInt);}
+
+// ROLES & ACTIONS
+const ROLES=[
+  {name:'BLUE CDR',faction:'NATO',col:'#6a9fd8',desc:'Comandante NATO. Vincolato da Conv. Aia 1954 e DIU.'},
+  {name:'CPP ADVISOR',faction:'TPC',col:'#d4a820',desc:'Carabinieri TPC. Mappa siti FOG, classifica beni, apre fascicoli CPI.'},
+  {name:'CIMIC OFF.',faction:'NATO',col:'#70c8c8',desc:'Coordinamento civile-militare. UNESCO, Blue Shield, autorita locali.'},
+  {name:'RED CMD',faction:'INSURGENTI',col:'#d87070',desc:'Non vincolato DIU. Guadagna PA dal traffico illecito.'}
+];
+
+const ACTS={
+  0:[
+    {l:'Emettere lista no-strike CPP',c:'legal',p:1,f(){addSc('blue',15);addCmp(20);sit('Lista no-strike emessa. 4 siti in protezione.','legal');ord('[B-CDR] NO-STRIKE LIST — Conv. Aia art. 3','ok')}},
+    {l:'Richiedere targeting review',c:'legal',p:1,f(){addSc('blue',10);addCmp(10);sit('Targeting review richiesta.','legal');ord('[B-CDR] TARGETING REVIEW — II Prot. art. 7','ok')}},
+    {l:'Manovrare B-1 verso Cittadella',c:'tactical',p:1,f(){mvU('B1',317,132);sit('B-1 avanza verso Cittadella.','neutral');ord('[B-CDR] MANOVRA B-1 → CITTADELLA','ok')}},
+    {l:'Manovrare B-2 verso Museo (se mappato)',c:'tactical',p:1,f(){
+      if(!G.fog[3]){sit('⚠ Museo non ancora mappato.','alert');return;}
+      mvU('B2',262,402);sit('B-2 avanza verso Museo.','neutral');ord('[B-CDR] MANOVRA B-2 → MUSEO','ok');
+    }},
+    {l:'Applicare artt.27-56 IV Conv. Aia 1907',c:'legal',p:1,f(){
+      addSc('blue',10);addCmp(10);highlightNorm('norm-hague1907');
+      sit('[B-CDR] Regolamento IV Conv. Aia 1907 applicato: artt.27 e 56. Nessun edificio culturale, religioso o scientifico può essere attaccato o sequestrato.','legal');
+      ord('[B-CDR] ART.27-56 IV CONV. AIA 1907 — APPLICATI','ok');
+    }},
+    {l:'Applicare NATO BI-SCD 086-005 — CPPO in staff',c:'legal',p:1,f(){
+      addSc('blue',15);addCmp(18);highlightNorm('norm-nato');
+      sit('[B-CDR] Cultural Property Protection Officer integrato nello staff. Direttiva NATO BI-SCD 086-005 applicata.','legal');
+      ord('[B-CDR] CPPO IN STAFF — NATO BI-SCD 086-005 (2019)','ok');
+    }},
+    {l:'Applicare Art.53 Prot. Aggiuntivo I (1977)',c:'legal',p:1,f(){
+      addSc('blue',12);addCmp(15);highlightNorm('norm-pa1');
+      sit('[B-CDR] Regola di ingaggio aggiornata: art.53 PA/I vietato qualsiasi atto ostile contro patrimonio culturale.','legal');
+      ord('[B-CDR] ROE — ART.53 PROT. AGG. I/1977','ok');
+    }},
+    {l:'Garantire corridoio sicuro per Caschi Blu',c:'legal',p:1,f(){
+      if(G.cbDeployed.every(d=>!d)){sit('[B-CDR] Nessun dispiegamento Caschi Blu richiesto. Richiedere prima a CIMIC.','neutral');return;}
+      G.cbCorridor=true;addSc('blue',15);addCmp(10);
+      sit('[B-CDR] Corridoio sicuro garantito. Caschi Blu UNESCO operativi in zona combat.','success');
+      ord('[B-CDR] CORRIDOIO SICURO → CASCHI BLU UNESCO','ok');
+      checkCPPChain();
+    }},
+    {l:'Fornire dati di targeting a INTERPOL',c:'intel',p:1,f(){
+      addSc('blue',10);addCmp(8);G.interpol++;
+      sit('[B-CDR] Dati targeting trasmessi a INTERPOL Works of Art Unit. Purple Notice attivata.','legal');
+      ord('[B-CDR] TARGETING DATA → INTERPOL WoA','ok');
+      applyPurpleNotice();
+    }},
+    {l:'Ingaggio artiglieria zona Scavi',c:'illegal',p:1,f(){addSc('red',20);addVl(35);sit('⚠ VIOLAZIONE: fuoco su area protetta. Conv. Aia art. 4.','alert');ord('[B-CDR] ARTIGLIERIA SCAVI ← VIOLAZIONE art.4','violation')}}
+  ],
+  1:[
+    {l:'🌫 RICOGNIZIONE — Mappare sito FOG',c:'recon',p:1,f(){
+      const i=G.fog.findIndex((r,j)=>!r);
+      if(i<0){sit('[TPC] Tutti i siti già mappati.','neutral');return;}
+      reveal(i);ord(`[TPC] RICOGNIZIONE → ${G.hs[i].name}`,'ok');
+    }},
+    {l:'Classificare sito — prot. rafforzata',c:'intel',p:1,f(){addSc('blue',20);addCmp(25);sit('[TPC] Cittadella: protezione rafforzata.','legal');ord('[TPC] PROTEZIONE RAFFORZATA — II Prot. art.10','ok');updHS(0,'protected')}},
+    {l:'Intel su traffico illecito',c:'intel',p:1,f(){addSc('blue',15);addCmp(15);sit('[TPC] Report traffico → INTERPOL.','legal');ord('[TPC] INTEL TRAFFICO → INTERPOL','ok')}},
+    {l:'Affidare Scavi a Blue Shield',c:'intel',p:1,f(){
+      if(!G.fog[2]){sit('⚠ Scavi non ancora mappati.','alert');return;}
+      addSc('blue',25);addCmp(20);sit('[TPC] Scavi affidati a Blue Shield.','success');ord('[TPC] BLUE SHIELD → SCAVI','ok');updHS(2,'protected');
+      G.trActive[2]=false;const m=document.getElementById('tm-2');if(m)m.style.display='none';updTPnl();
+    }},
+    {l:'Avviare fascicolo penale CPI',c:'intel',p:1,f(){addSc('blue',30);addCmp(10);sit('[TPC] Fascicolo CPI aperto. Statuto Roma art.8.','legal');ord('[TPC] FASCICOLO CPI — Statuto Roma art.8','ok')}},
+    {l:'Invocare Patto Roerich 1935 — Bandiera della Pace',c:'intel',p:1,f(){
+      addSc('blue',10);addCmp(8);highlightNorm('norm-roerich');
+      sit('[TPC] Patto Roerich 1935 invocato. Bandiera della Pace apposta sui siti. Primo precedente normativo CPP moderno.','legal');
+      ord('[TPC] BANDIERA DELLA PACE — PATTO ROERICH 1935','ok');
+    }},
+    {l:'Applicare Conv. UNIDROIT 1995 — Restituzione',c:'intel',p:1,f(){
+      if(G.trafficking<10){sit('[TPC] Nessun bene trafugato identificato. UNIDROIT 1995 non applicabile ora.','neutral');return;}
+      addSc('blue',22);addCmp(12);G.trafficking=Math.max(0,G.trafficking-15);updTr();highlightNorm('norm-unidroit');
+      sit('[TPC] Conv. UNIDROIT 1995 attivata. Procedura di restituzione avviata. Acquirenti di buona fede notificati. Traffico -15%.','legal');
+      ord('[TPC] CONV. UNIDROIT 1995 — RESTITUZIONE BENI','ok');
+    }},
+    {l:'Documentare per Conv. Nicosia 2017',c:'intel',p:1,f(){
+      addSc('blue',18);addCmp(10);highlightNorm('norm-nicosia');
+      sit('[TPC] Documentazione reati culturali ai sensi Conv. Nicosia 2017. Collegamento traffico-finanziamento terrorismo provato.','legal');
+      ord('[TPC] CONV. NICOSIA 2017 — REATI CULTURALI','ok');
+      // Extra: reduce red bonus (cuts terrorism financing)
+      if(G.redBonus>0){G.redBonus=Math.max(0,G.redBonus-1);updTPnl();sit('[TPC] Canale finanziamento terrorismo interrotto (art.3 Nicosia). Red perde 1 PA bonus.','success');}
+    }},
+    {l:'Attivare Ris. ONU 2347/2017 — Reporting',c:'intel',p:1,f(){
+      addSc('blue',20);addCmp(12);highlightNorm('norm-unsc2347');
+      sit('[TPC] Report inviato al Comitato ONU ex Ris.2347/2017. Patrimonio Teatro Talos sotto monitoraggio internazionale.','legal');
+      ord('[TPC] REPORT → RIS.ONU 2347/2017','ok');
+    }},
+    {l:'Invocare Conv. UNESCO 1970 — Anti-traffico',c:'intel',p:1,f(){
+      if(G.trafficking===0){sit('[TPC] Nessun traffico illecito rilevato. Conv. UNESCO 1970 non applicabile ora.','neutral');return;}
+      G.trafficking=Math.max(0,G.trafficking-20);addSc('blue',18);addCmp(10);updTr();highlightNorm('norm-unesco70');
+      sit('[TPC] Conv. UNESCO 1970 invocata. Cooperazione internazionale anti-traffico attivata. Traffico -20%.','legal');
+      ord('[TPC] CONV. UNESCO 1970 — ANTI-TRAFFICO','ok');
+    }},
+    {l:'Citare Ris. ONU 2199/2015 — Finanziamento terrorismo',c:'intel',p:1,f(){
+      if(!G.trActive.some(Boolean)){sit('[TPC] Nessun collegamento traffico-finanziamento rilevato.','neutral');return;}
+      addSc('blue',25);addVl(-10);addCmp(15);highlightNorm('norm-unsc2199');
+      G.redBonus=Math.max(0,G.redBonus-1);
+      sit('[TPC] Ris.ONU 2199/2015 invocata. Collegamento saccheggio-finanziamento terrorismo documentato. Canali finanziari Red bloccati.','legal');
+      ord('[TPC] RIS.ONU 2199/2015 — FINANZIAMENTO TERRORISMO','ok');
+      updTPnl();
+    }},
+    {l:'Applicare II Prot. 1999 — Protezione rafforzata',c:'intel',p:1,f(){
+      highlightNorm('norm-prot2');
+      const i=G.hs.findIndex((s,idx)=>G.fog[idx]&&s.status==='threatened');
+      if(i<0){sit('[TPC] Nessun sito idoneo per protezione rafforzata II Prot.1999.','neutral');return;}
+      addSc('blue',22);addCmp(20);updHS(i,'protected');
+      sit(`[TPC] ${G.hs[i].name}: protezione rafforzata ai sensi II Protocollo Aia 1999, artt.10-14.`,'legal');
+      ord(`[TPC] PROTEZIONE RAFFORZATA II PROT.1999 → ${G.hs[i].name}`,'ok');
+    }},
+    {l:'🔵 Emettere Purple Notice INTERPOL',c:'intel',p:1,f(){
+      if(G.trafficking===0&&!G.trActive.some(Boolean)){sit('[TPC] Nessun traffico illecito rilevato. Purple Notice non necessaria.','neutral');return;}
+      G.interpol++;addSc('blue',20);addCmp(12);
+      sit('[TPC] Purple Notice emessa. INTERPOL banca dati aggiornata. Traffico illecito bloccato -25%.','legal');
+      ord('[TPC] PURPLE NOTICE → INTERPOL WoA Unit','ok');
+      applyPurpleNotice();
+    }},
+    {l:'🔵 Analisi mercato antiquario INTERPOL',c:'intel',p:1,f(){
+      addSc('blue',15);addCmp(10);
+      const i=G.fog.findIndex((r,j)=>!r);
+      if(i>=0){reveal(i);sit(`[TPC/INTERPOL] Intel mercato antiquario: ${G.hs[i].name} localizzato tramite analisi transazioni.`,'success');}
+      else sit('[TPC/INTERPOL] Analisi mercato: tutti i siti già mappati. +15 BLU.','success');
+      ord('[TPC] ANALISI MERCATO ANTIQUARIO → INTERPOL','ok');
+    }},
+    {l:'⛑ Briefing tecnico ai Caschi Blu UNESCO',c:'intel',p:1,f(){
+      if(!G.cbDeployed.some(Boolean)){sit('[TPC] Nessun Casco Blu dispiegato. Richiedere prima a CIMIC.','neutral');return;}
+      G.cbBriefed=true;addSc('blue',25);addCmp(20);
+      sit('[TPC] Briefing tecnico completato. Caschi Blu UNESCO operano con intel TPC. Efficacia massima.','success');
+      ord('[TPC] BRIEFING TECNICO → CASCHI BLU UNESCO','ok');
+      checkCPPChain();
+    }}
+  ],
+  2:[
+    {l:'Coordinare evacuazione Museo',c:'legal',p:1,f(){
+      if(!G.fog[3]){sit('⚠ Museo non ancora mappato.','alert');return;}
+      addSc('blue',20);addCmp(15);sit('[CIMIC] Museo: 95% evacuato.','success');ord('[CIMIC] EVACUAZIONE MUSEO → COMPLETATA','ok');
+    }},
+    {l:'Notificare UNESCO',c:'legal',p:1,f(){addSc('blue',10);addCmp(10);sit('[CIMIC] UNESCO notificata.','legal');ord('[CIMIC] NOTIFICA UNESCO','ok')}},
+    {l:'Coord. con autorita locali patrimonio',c:'legal',p:1,f(){addSc('blue',15);addCmp(20);sit('[CIMIC] Min. Cultura: inventari condivisi.','success');ord('[CIMIC] COORD. MINISTERO CULTURA','ok')}},
+    {l:'Richiamare UNESCO 1972 — World Heritage List',c:'legal',p:1,f(){
+      addSc('blue',15);addCmp(12);highlightNorm('norm-unesco72');
+      // Check if any site is UNESCO listed (Cittadella)
+      sit('[CIMIC] Sito WHL (Cittadella di Talos) formalmente notificato al World Heritage Committee UNESCO. Protezione internazionale rafforzata.','legal');
+      ord('[CIMIC] WORLD HERITAGE LIST — UNESCO 1972','ok');
+    }},
+    {l:'Segnalare danno patrimonio subacqueo (UNESCO 2001)',c:'legal',p:1,f(){
+      addSc('blue',10);addCmp(8);highlightNorm('norm-unesco2001');
+      sit('[CIMIC] Conv. UNESCO 2001 invocata. Mar di Talos: patrimonio subacqueo sotto monitoraggio. Attività militari navali vincolate.','legal');
+      ord('[CIMIC] CONV. UNESCO 2001 — PATRIMONIO SUBACQUEO','ok');
+    }},
+    {l:'Tutelare patrimonio immateriale (UNESCO 2003)',c:'legal',p:1,f(){
+      addSc('blue',12);addCmp(10);highlightNorm('norm-unesco2003');
+      sit('[CIMIC] Conv. UNESCO 2003 attivata. Inventario patrimonio immateriale locale avviato: tradizioni orali, pratiche religiose, arti. Documentazione in corso.','legal');
+      ord('[CIMIC] CONV. UNESCO 2003 — PATRIMONIO IMMATERIALE','ok');
+    }},
+    {l:'Applicare UNESCO Military Manual 2016',c:'legal',p:1,f(){
+      addSc('blue',15);addCmp(15);highlightNorm('norm-unescomil');
+      sit('[CIMIC] Procedure UNESCO Military Manual 2016 attivate: liste no-strike, schede sito, coordinamento CHO-CIMIC.','legal');
+      ord('[CIMIC] UNESCO MIL. MANUAL 2016 — PROCEDURE ATTIVATE','ok');
+    }},
+    {l:'Notificare Ris. ONU 2347/2017 al Consiglio',c:'legal',p:1,f(){
+      addSc('blue',18);addCmp(12);highlightNorm('norm-unsc2347');
+      sit('[CIMIC] Notifica formale al Consiglio di Sicurezza ONU ex Ris.2347/2017. Primo caso di applicazione in questo teatro.','legal');
+      ord('[CIMIC] NOTIFICA CONSIGLIO SICUREZZA ONU — RIS.2347','ok');
+    }},
+    {l:'Richiedere SOFA d\'urgenza al MAECI',c:'legal',p:2,f(){addSc('blue',20);addCmp(15);sit('[CIMIC] Richiesta SOFA urgente → MAECI.','legal');ord('[CIMIC] RICHIESTA SOFA → MAECI','ok')}},
+    {l:'⛑ Richiedere dispiegamento Caschi Blu UNESCO',c:'legal',p:2,f(){
+      const threatened=G.hs.findIndex((s,i)=>G.fog[i]&&s.status==='threatened'&&!G.cbDeployed[i]);
+      if(threatened<0){sit('[CIMIC] Nessun sito minacciato disponibile per dispiegamento.','neutral');return;}
+      G.cbDeployed[threatened]=true;addSc('blue',30);addCmp(25);
+      updHS(threatened,'protected');
+      sit(`[CIMIC] Caschi Blu UNESCO dispiegati su ${G.hs[threatened].name}. Protezione automatica attivata.`,'success');
+      ord(`[CIMIC] CASCHI BLU UNESCO → ${G.hs[threatened].name}`,'ok');
+      // Add CB marker on map
+      addCBMarker(threatened);
+      checkCPPChain();
+    }},
+    {l:'🔵 Coordinare sequestro internazionale INTERPOL',c:'legal',p:2,f(){
+      if(!G.trActive.some(Boolean)&&G.trafficking<20){sit('[CIMIC] Nessun traffico illecito attivo. INTERPOL non necessario.','neutral');return;}
+      G.trafficBlocked=true;G.trafficking=Math.max(0,G.trafficking-40);
+      G.redBonus=Math.max(0,G.redBonus-2);
+      addSc('blue',35);addCmp(15);updTr();updTPnl();
+      sit('[CIMIC] INTERPOL ha eseguito sequestro internazionale. Traffico illecito -40%. Red perde PA bonus.','success');
+      ord('[CIMIC] SEQUESTRO INTERNAZIONALE → INTERPOL','ok');
+    }},
+    {l:'Requisire Museo come quartier gen.',c:'illegal',p:1,f(){addSc('red',25);addVl(40);sit('⚠ VIOLAZIONE: requisizione bene protetto. Art. 4(3).','alert');ord('[CIMIC] REQUISIZIONE MUSEO ← VIOLAZIONE art.4(3)','violation')}}
+  ],
+  3:[
+    {l:'Occupare Cittadella (pos. difensiva)',c:'illegal',p:1,f(){addSc('red',20);addVl(30);sit('[RED] R-1 occupa Cittadella. Regola 39 DIU violata.','alert');ord('[RED] OCCUPAZIONE CITTADELLA ← R.39','violation');updHS(0,'threatened')}},
+    {l:'Saccheggio Scavi Archeologici',c:'illegal',p:1,f(){
+      addSc('red',15);addVl(35);G.trafficking=Math.min(100,G.trafficking+25);updTr();
+      sit('[RED] Saccheggio Scavi. Regola 40 + CPI.','alert');ord('[RED] SACCHEGGIO SCAVI ← R.40+CPI','violation');
+    }},
+    {l:'Usare PA bonus traffico illecito',c:'tactical',p:0,f(){
+      if(G.redBonus<=0){sit('[RED] Nessun PA bonus disponibile.','neutral');return;}
+      G.ap[3]+=G.redBonus;sit(`[RED] ${G.redBonus} PA bonus dal traffico illecito.`,'alert');
+      ord(`[RED] PA BONUS TRAFFICO: +${G.redBonus}`,'violation');G.redBonus=0;renderRC();renderActs();
+    }},
+    {l:'Invocare necessità militare imperativa (art.4 Aia)',c:'tactical',p:1,f(){
+      addSc('red',8);highlightNorm('norm-hague54');
+      sit('[RED] Eccezione necessità militare imperativa invocata (art.4 Conv.Aia). Legale solo se strettamente necessario e temporaneo.','neutral');
+      ord('[RED] NECESSITÀ MILITARE IMPERATIVA — ART.4 AIA','ok');
+    }},
+    {l:'Manovrare R-2 evitando siti protetti',c:'tactical',p:1,f(){addSc('red',5);sit('[RED] R-2 mantiene distanza dai siti.','neutral');ord('[RED] MANOVRA R-2 — ROTTA ALTERNATIVA','ok')}},
+    {l:'Distruzione deliberata Moschea',c:'illegal',p:2,f(){addSc('red',10);addVl(50);sit('[RED] ⚠⚠ CRIMINE DI GUERRA: distruzione Moschea. CPI art.8(2)(b)(ix).','alert');ord('[RED] DISTRUZIONE MOSCHEA ← CRIMINE GUERRA','violation');updHS(1,'threatened')}}
+  ]
+};
+
+function renderRC(){
+  document.getElementById('rcards').innerHTML=ROLES.map((r,i)=>{
+    const locked=G.myRole>=0&&G.myRole!==i&&!G.botMode||(G.botMode&&i===3),mine=G.myRole===i,isBot=G.botMode&&i===3;
+    const bonus=i===3&&G.redBonus>0?` <span style="color:#d87070">[+${G.redBonus}PA]</span>`:'';
+    return `<div class="rc${G.selRole===i?' sel':''}${mine?' mine':''}" id="rc-${i}"
+      onclick="${locked?'':('selR('+i+')')}" style="${locked?'opacity:.35;pointer-events:none':'cursor:pointer'}">
+      <div class="rch"><span class="rn" style="color:${r.col}">${r.name}${bonus}</span><span class="rt" style="color:${r.col};border-color:${r.col}">${r.faction}</span></div>
+      <div class="rd">${r.desc}</div>
+      <div class="apr" id="ap-${i}">${Array.from({length:Math.max(3,G.ap[i])},(_,j)=>`<div class="apd${j>=G.ap[i]?' u':''}"></div>`).join('')}</div>
+      ${(!locked&&!isBot)?`<span style="font-size:6px;color:var(--gold);border:1px solid var(--gold);padding:1px 4px;letter-spacing:1px;cursor:pointer;display:inline-block;margin-top:2px" onclick="event.stopPropagation();openConsole(${i})">🔒 CONSOLE</span>`:''}
+    </div>`;
+  }).join('');
+}
+
+function renderHSSB(){
+  document.getElementById('hssb').innerHTML=G.hs.map((s,i)=>{
+    const rev=G.fog[i],col=!rev?'#555':s.status==='protected'?'#6a9fd8':s.status==='threatened'?'#c87020':'#8b1a1a';
+    const pip=G.trActive[i]?'<span class="tpip"></span>':'';
+    return `<div class="hsi" style="border-color:${col}" onclick="selHS(${i})">
+      <div style="color:${col};font-size:9px;margin-bottom:1px">${rev?s.name:'??? SITO SCONOSCIUTO'}${pip}</div>
+      <div style="color:var(--muted)">${rev?s.type:'Richiedere ricognizione CPP'}</div>
+      <div style="color:${col};font-size:8px;margin-top:1px">${rev?s.status.toUpperCase():'FOG OF WAR'}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderActs(){
+  const r=G.selRole;if(r<0)return;
+  document.getElementById('atitle').textContent=`AZIONI — ${ROLES[r].name}`;
+  document.getElementById('apanel').innerHTML=ACTS[r].map((a,i)=>{
+    const dis=a.p>0&&G.ap[r]<a.p;
+    return `<button class="ab ${a.c}"${dis?' disabled':''} onclick="doAct(${r},${i})">${a.l}<span class="ac2">${a.p>0?'PA:'+a.p:'GRATIS'}</span></button>`;
+  }).join('');
+}
+
+function selR(idx){if(G.myRole>=0&&G.myRole!==idx)return;G.selRole=idx;renderRC();renderActs();}
+
+function doAct(r,i){
+  const a=ACTS[r][i];if(a.p>0&&G.ap[r]<a.p)return;
+  if(a.p>0)G.ap[r]-=a.p;
+  a.f();G.actCount++;renderRC();renderActs();
+  if(G.phase===2&&!G.sofaDone&&G.violations>=30&&G.scores.blue>=20){
+    G.sofaDone=true;pauseTimer();
+    setTimeout(()=>{document.getElementById('sofa-modal').style.display='flex';sit('[MAECI] ⚠ ALLARME SOFA: assenza copertura giuridica TPC.','alert');},1200);
+  }
+}
+
+function addSc(t,v){G.scores[t]+=v;document.getElementById(t==='blue'?'sb':'sr').textContent=G.scores[t];}
+function addCmp(v){G.compliance=Math.min(100,G.compliance+v);document.getElementById('lp').style.width=G.compliance+'%';document.getElementById('lpv').textContent=G.compliance+'%';}
+// addVl moved above
+
+function sit(t,tp=''){
+  const el=document.getElementById('sitrep');
+  const h=String(6+Math.floor(G.actCount/2)).padStart(2,'0'),m=String((G.actCount*7)%60).padStart(2,'0');
+  const d=document.createElement('div');d.className=`sl ${tp}`;d.innerHTML=`<span class="st">${h}:${m}</span>${t}`;
+  el.appendChild(d);el.scrollTop=el.scrollHeight;
+}
+function ord(t,tp=''){
+  const log=document.getElementById('olog');
+  if(log.children.length===1&&log.children[0].style.color)log.innerHTML='';
+  const d=document.createElement('div');d.className=`ole ${tp}`;d.textContent=`[T${G.turn}] ${t}`;
+  log.appendChild(d);log.scrollTop=log.scrollHeight;
+}
+
+function mvU(id,x,y){
+  const el=document.getElementById(`u-${id}`);if(!el)return;
+  const r=el.querySelector('rect');if(r){r.setAttribute('x',x);r.setAttribute('y',y);}
+  const ts=el.querySelectorAll('text');if(ts[0]){ts[0].setAttribute('x',x+18);ts[0].setAttribute('y',y+22);}if(ts[1]){ts[1].setAttribute('x',x+18);ts[1].setAttribute('y',y+10);}
+}
+function selU(id){document.querySelectorAll('.ut').forEach(u=>u.classList.remove('sel'));const e=document.getElementById(`u-${id}`);if(e)e.classList.add('sel');}
+
+function selHS(idx){
+  G.selHS=idx;const s=G.hs[idx],rev=G.fog[idx];
+  const col=!rev?'#555':s.status==='protected'?'#6a9fd8':s.status==='threatened'?'#c87020':'#8b1a1a';
+  const lbl=!rev?'FOG OF WAR':s.status==='protected'?'PROTETTO':'MINACCIATO';
+  const trbadge=G.trActive[idx]?'<div style="color:#d87070;margin-top:3px;font-size:9px">💀 SACCHEGGIO ATTIVO</div>':'';
+  document.getElementById('hsd').innerHTML=!rev?
+    `<div class="hdn" style="color:#555">??? SITO NON MAPPATO</div><div style="color:#555;font-size:9px">CPP Advisor deve effettuare ricognizione (1 PA) per rivelare questo sito.</div>`:
+    `<div class="hdn">${s.name}</div><div style="color:var(--muted);margin-bottom:2px;font-size:8px">${s.type}</div><div style="font-size:9px;margin-bottom:4px">${s.desc}</div><div style="color:#6a9fd8;font-size:8px;margin-bottom:2px">⚖ ${s.hague}</div><div style="color:${s.status==='protected'?'#70c870':'#d87070'};font-size:8px">⚠ ${s.threat}</div>${trbadge}<div style="margin-top:4px"><span style="border:1px solid ${col};color:${col};font-size:7px;padding:1px 5px;letter-spacing:1px">${lbl}</span></div>`;
+  document.querySelectorAll('.hg').forEach((e,i)=>e.style.opacity=i===idx?'1':'.65');
+}
+
+function updHS(idx,st){
+  G.hs[idx].status=st;
+  const col=st==='protected'?'#1a4a8a':'#c87020',lbl=st==='protected'?'[PROTETTO]':'[MINACCIATO]';
+  const le=document.getElementById(`hl-${idx}`);if(le){le.textContent=lbl;le.setAttribute('fill',col);}
+  const re=document.querySelector(`#hs-${idx} rect`);if(re)re.setAttribute('fill',col);
+  renderHSSB();if(G.selHS===idx)selHS(idx);
+}
+
+// SOFA
+function sofaChoice(c){
+  document.getElementById('sofa-modal').style.display='none';startTimer();
+  const O={
+    intervento:{msg:'[TPC] Intervento senza SOFA. Reperti recuperati. Esposizione giuridica TPC.',tp:'alert',o:'[TPC] INTERVENTO SENZA SOFA ← ESPOSIZIONE GIURIDICA',ot:'violation',b:30,v:20,cp:0,vd:'INTERVENTO SENZA SOFA: personale TPC esposto a giurisdizione locale. Art. 98 Statuto Roma — assenza accordo bilaterale.'},
+    richiestaSOFA:{msg:'[CIMIC] Richiesta copertura SOFA urgente al MAECI. Ritardo 48h.',tp:'legal',o:'[CIMIC] RICHIESTA COPERTURA SOFA → MAECI',ot:'ok',b:15,v:0,cp:20,vd:'PROCEDURA SOFA CORRETTA: sospensione intervento in attesa di copertura diplomatica. Costo: dispersione potenziale reperti nelle 48h.'},
+    ONU:{msg:'[TPC] Coordinate trasmesse a UNESCO/INTERPOL. Nessuna esposizione TPC.',tp:'neutral',o:'[TPC] DELEGA UNESCO/INTERPOL',ot:'ok',b:10,v:0,cp:25,vd:'DELEGA ONU/UNESCO: CPP Advisor ha correttamente trasferito competenza ad autorità con copertura nel teatro. Soluzione multilaterale.'},
+    rinuncia:{msg:'[TPC] Intervento sospeso. Reperti dispersi. Obiettivo CPP non raggiunto.',tp:'neutral',o:'[TPC] NON INTERVENTO — ASSENZA SOFA',ot:'ok',b:0,v:0,cp:0,vd:'NON INTERVENTO: scelta difendibile per sicurezza del personale. Vuoto giuridico da colmare in pianificazione pre-missione.'}
+  };
+  const o=O[c];sit(o.msg,o.tp);ord(o.o,o.ot);
+  if(o.b)addSc('blue',o.b);if(o.v)addVl(o.v);if(o.cp)addCmp(o.cp);
+  G.sofaVerdict=o.vd;
+  const b=document.createElement('div');b.className='pb';b.style.fontSize='12px';b.style.maxWidth='440px';b.style.textAlign='center';b.style.letterSpacing='1px';b.textContent='DILEMMA SOFA RISOLTO';
+  document.getElementById('game-root').appendChild(b);setTimeout(()=>b.remove(),2500);
+}
+
+// CASCHI BLU & INTERPOL HELPERS
+function toggleLegal(){
+  const p=document.getElementById('legal-panel');
+  const btn=document.getElementById('legal-toggle');
+  if(p.style.display==='none'){p.style.display='block';btn.textContent='⚖ QUADRO NORMATIVO APPLICABILE ▴';}
+  else{p.style.display='none';btn.textContent='⚖ QUADRO NORMATIVO APPLICABILE ▾';}
+}
+
+function highlightNorm(id){
+  document.querySelectorAll('.lp-item').forEach(el=>el.classList.remove('active-norm'));
+  const el=document.getElementById(id);
+  if(el){
+    el.classList.add('active-norm');
+    // Auto-open legal panel and scroll to norm
+    const p=document.getElementById('legal-panel');
+    if(p.style.display==='none')toggleLegal();
+    setTimeout(()=>el.scrollIntoView({behavior:'smooth',block:'nearest'}),100);
+  }
+}
+
+function addVl(v){
+  // allow negative values to reduce violations
+  G.violations=Math.max(0,Math.min(100,G.violations+v));
+  document.getElementById('lv').style.width=G.violations+'%';document.getElementById('lvv').textContent=G.violations+'%';
+  if(v>0&&G.journalistOn){
+    const extra=Math.floor(v*.5);G.violations=Math.min(100,G.violations+extra);
+    document.getElementById('lv').style.width=G.violations+'%';document.getElementById('lvv').textContent=G.violations+'%';
+    sit('[GIORNALISTA] Violazione amplificata +'+extra+'%','alert');
+  }
+}
+
+function applyPurpleNotice(){
+  G.trafficking=Math.max(0,G.trafficking-25);
+  G.redBonus=Math.max(0,G.redBonus-1);
+  updTr();updTPnl();
+  // Show INTERPOL counter
+  let el=document.getElementById('interpol-counter');
+  if(!el){
+    el=document.createElement('div');
+    el.id='interpol-counter';
+    el.style.cssText='font-size:9px;color:#6a9fd8;border:1px solid #1a4a8a;padding:3px 8px;margin-top:4px';
+    document.getElementById('tpanel').appendChild(el);
+  }
+  el.textContent=`🔵 Purple Notices emesse: ${G.interpol} | Traffico bloccato: ${G.trafficBlocked?'SÌ':'NO'}`;
+}
+
+function addCBMarker(idx){
+  const positions=[[335,80],[140,210],[520,250],[280,390]];
+  const [x,y]=positions[idx];
+  const svg=document.getElementById('gmap');
+  const g=document.createElementNS('http://www.w3.org/2000/svg','g');
+  g.id=`cb-${idx}`;
+  const circ=document.createElementNS('http://www.w3.org/2000/svg','circle');
+  circ.setAttribute('cx',x);circ.setAttribute('cy',y);circ.setAttribute('r','10');
+  circ.setAttribute('fill','#1a4a8a');circ.setAttribute('opacity','0.9');
+  const txt=document.createElementNS('http://www.w3.org/2000/svg','text');
+  txt.setAttribute('x',x);txt.setAttribute('y',y+4);
+  txt.setAttribute('text-anchor','middle');txt.setAttribute('font-size','10');
+  txt.setAttribute('fill','white');txt.setAttribute('font-family','Share Tech Mono');
+  txt.textContent='⛑';
+  g.appendChild(circ);g.appendChild(txt);svg.appendChild(g);
+}
+
+function checkCPPChain(){
+  // Complete chain: CB deployed + CB briefed + corridor secured + Purple Notice
+  if(G.cbDeployed.some(Boolean)&&G.cbBriefed&&G.cbCorridor&&G.interpol>0&&!G.cppChainComplete){
+    G.cppChainComplete=true;
+    addSc('blue',50);addCmp(20);
+    sit('[SISTEMA] ★ OPERAZIONE CPP COMPLETA — Catena di protezione integrata attivata: Caschi Blu + TPC + INTERPOL + corridoio sicuro. +50 BLU, +20% compliance.','success');
+    ord('[SISTEMA] ★ CATENA CPP INTEGRATA COMPLETATA','ok');
+    const b=document.createElement('div');b.className='pb';
+    b.style.cssText='font-size:11px;max-width:480px;text-align:center;letter-spacing:1px;border-color:#70c870;color:#70c870';
+    b.textContent='★ OPERAZIONE CPP COMPLETA — CATENA INTEGRATA ATTIVATA';
+    document.getElementById('game-root').appendChild(b);setTimeout(()=>b.remove(),3500);
+  }
+}
+
+// PHASES
+function nextPhase(){
+  clearInterval(G.timerInt);chkTraffic();
+  G.phase++;if(G.phase>=G.phases.length){showEnd();return;}
+  G.turn++;
+  G.ap=[3,3,3,3+G.redBonus];G.redBonus=0;G.journalistOn=false;
+  setTimeout(()=>drawEvent(),900);
+  const bn=document.createElement('div');bn.className='pb';bn.textContent=G.phases[G.phase];
+  document.getElementById('game-root').appendChild(bn);setTimeout(()=>bn.remove(),2500);
+  document.getElementById('tbadge').textContent=`TURNO ${G.turn} · ${G.phases[G.phase]}`;
+  document.getElementById('phase-label').textContent=`FASE ${G.phase+1}/4`;
+  document.getElementById('tl').textContent=G.phases[G.phase];
+  document.getElementById('td').classList.remove('urgent');document.getElementById('tbf').classList.remove('urgent');
+  for(let i=1;i<=4;i++){const d=document.getElementById(`pd${i}`);if(!d)continue;d.classList.remove('active','done');if(i-1<G.phase)d.classList.add('done');else if(i-1===G.phase)d.classList.add('active');}
+  const msgs=[['07:00','Fase MANOVRA. Unità si ridispiegano.','neutral'],['10:00','Fase INGAGGIO. ROE in vigore.','alert'],['16:00','Fase DEBRIEFING. Analisi CPP in corso.','legal']];
+  if(msgs[G.phase-1])setTimeout(()=>sit(...msgs[G.phase-1]),1500);
+  startTimer();renderRC();updTPnl();if(G.selRole>=0)renderActs();
+  if(G.botMode&&G.phase>0)setTimeout(()=>botRedTurn(),3000);
+}
+
+// END SCREEN
+function showEnd(){
+  clearInterval(G.timerInt);
+  const prot=G.hs.filter((s,i)=>G.fog[i]&&s.status==='protected').length;
+  const rev=G.fog.filter(Boolean).length;
+  const cbStr=G.cbDeployed.some(Boolean)?` Caschi Blu UNESCO dispiegati su ${G.cbDeployed.filter(Boolean).length} sito/i.`:'';
+  const intStr=G.interpol>0?` ${G.interpol} Purple Notice INTERPOL emesse.`:'';
+  const chainStr=G.cppChainComplete?' ★ Catena CPP integrata completata.':'';
+  const vd=G.violations>60?'VALUTAZIONE CRITICA — Violazioni Conv. Aia registrate. Fascicolo trasmesso alla CPI.'+cbStr+intStr:G.compliance>50?'VALUTAZIONE POSITIVA — Buon livello di compliance DIU. Modello TPC efficace.'+cbStr+intStr+chainStr:'VALUTAZIONE PARZIALE — Risultati misti. Framework CPP parzialmente applicato.'+cbStr+intStr;
+  const sb=G.sofaVerdict?`<div style="margin-top:10px;border:1px solid #c8a820;padding:10px 14px;max-width:480px;text-align:left;font-size:10px;line-height:1.8;color:#e8e0c8"><div style="color:#d4a820;font-size:8px;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px">⚖ DILEMMA SOFA</div>${G.sofaVerdict}</div>`:'';
+  const el=document.createElement('div');el.className='es';
+  el.innerHTML=`<div class="et2">OPERAZIONE CONCLUSA</div><div class="es2">RAPPORTO FINALE — HORIZON SHIELD PRO v3.0</div>
+  <div class="esc2">
+    <div class="esci"><div class="esv2">${G.scores.blue}</div><div class="esl2">BLU/TPC</div></div>
+    <div class="esci"><div class="esv2">${G.scores.red}</div><div class="esl2">ROSSO</div></div>
+    <div class="esci"><div class="esv2">${prot}/${rev}</div><div class="esl2">SITI PROTETTI</div></div>
+    <div class="esci"><div class="esv2">${rev}/4</div><div class="esl2">FOG RIVELATO</div></div>
+    <div class="esci"><div class="esv2">${G.violations}%</div><div class="esl2">VIOLAZIONI</div></div>
+    <div class="esci"><div class="esv2">${G.trafficking}%</div><div class="esl2">TRAFFICO</div></div>
+    <div class="esci"><div class="esv2">${G.cbDeployed.filter(Boolean).length}</div><div class="esl2">CASCHI BLU</div></div>
+    <div class="esci"><div class="esv2">${G.interpol}</div><div class="esl2">PURPLE NOTICE</div></div>
+  </div>
+  ${G.cppChainComplete?'<div style="border:1px solid #70c870;padding:8px 16px;color:#70c870;font-size:11px;font-family:Share Tech Mono,monospace;margin-bottom:12px;text-align:center">★ OPERAZIONE CPP COMPLETA — Catena integrata Caschi Blu + TPC + INTERPOL attivata</div>':''}
+  <div class="ev">${vd}</div>${sb}
+  <div style="margin-top:10px;font-size:9px;color:#6a9fd8;max-width:480px;text-align:center;line-height:1.8;font-family:'Share Tech Mono',monospace">Patto Roerich 1935 · IV Conv.Aia 1907 · Conv.Aia 1954 + I/II Prot. · PA I art.53 · PA II art.16 · UNESCO 1970/1972/2001/2003 · UNIDROIT 1995 · DIU Cons. CICR R.38-41 · Statuto Roma 1998 art.8 · Ris.ONU 2199/2015 · Ris.ONU 2347/2017 · Conv.Nicosia 2017 · NATO BI-SCD 086-005 · UNESCO Mil.Manual 2016 · SOFA · MAECI · Caschi Blu UNESCO · INTERPOL WoA Unit</div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:18px">
+    <button class="rb" onclick="location.reload()">▶ NUOVA PARTITA</button>
+    <button class="rb" style="background:#1a1a10" onclick="goLanding()">↩ MENU</button>
+  </div>
+  <div style="margin-top:24px;padding-top:14px;border-top:1px solid #3a3020;text-align:center">
+    <div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:#6a5a30;letter-spacing:3px;text-transform:uppercase;margin-bottom:3px">Progetto di ricerca</div>
+    <div style="font-family:'Cinzel',serif;font-size:12px;color:#8a7840;letter-spacing:2px">Claudio Sanz&#xF2;</div>
+  </div>`;
+  document.getElementById('game-root').appendChild(el);
+}
+
+// NAVIGATION
+function startGame(r){
+  G.botMode=(r===-2);
+  if(G.botMode)r=0; // bot mode: player controls Blue/TPC/CIMIC
+  G.myRole=r;
+  document.getElementById('landing').style.display='none';
+  document.getElementById('game-root').style.display='flex';
+  if(r>=0){const rl=ROLES[r],b=document.getElementById('mrb');b.style.display='block';b.style.color=rl.col;b.style.borderColor=rl.col;b.textContent=rl.name;G.selRole=r;}
+  renderRC();renderHSSB();updTPnl();if(G.selRole>=0)renderActs();
+  startTimer();setTimeout(()=>drawEvent(),3000);
+  if(G.botMode){document.getElementById('bot-ind').style.display='block';setTimeout(()=>botRedTurn(),5000);}
+}
+function goLanding(){clearInterval(G.timerInt);document.querySelectorAll('.es,.pb').forEach(e=>e.remove());document.getElementById('game-root').style.display='none';document.getElementById('landing').style.display='flex';}
+
+// ══ CRT — COMBAT RESULT TABLE (v3.0) ═══════════════════════════════
+G.diceQ=null;
+if(!G.unitStatus)G.unitStatus={B1:'ok',B2:'ok',TPC:'ok',R1:'ok',R2:'ok'};
+if(typeof G.botMode==='undefined')G.botMode=false;
+
+function rollD6(){return Math.floor(Math.random()*6)+1;}
+
+function resolveCRT(attacker,context,cb){
+  const raw=rollD6();
+  let mod=0;const mods=[];
+  if(context.terrain==='hill'){mod-=1;mods.push('Collina -1');}
+  if(context.terrain==='forest'){mod-=1;mods.push('Foresta -1');}
+  if(G.compliance>50&&context.illegal){mod-=1;mods.push('CPP -1');}
+  if(context.siteIdx>=0&&G.cbDeployed&&G.cbDeployed[context.siteIdx]){mod-=2;mods.push('Caschi Blu -2');}
+  if(G.unitStatus&&G.unitStatus[attacker]==='immobile'){mod-=2;mods.push('Immobile -2');}
+  const total=Math.max(1,Math.min(6,raw+mod));
+  const faces=['⚀','⚁','⚂','⚃','⚄','⚅'];
+  const RES={1:'FALLIMENTO CRITICO',2:'FALLIMENTO',3:'PARZIALE',4:'SUCCESSO',5:'SUCCESSO PIENO',6:'SUCCESSO TOTALE'};
+  const DET={1:'Attacco respinto. Unità immobilizzata 1 turno.',2:'Attacco fallito.',3:'Effetto limitato al 50%.',4:'Obiettivo raggiunto.',5:'Successo con margine.',6:'Successo totale. Vantaggio tattico.'};
+  const result=RES[total];
+  const modStr=mods.length?` (${mods.join(', ')})`:'';
+  const normRef=context.normRef?'\nRif: '+context.normRef:'';
+  const ov=document.getElementById('dice-ov');
+  if(ov){
+    ov.style.display='flex';
+    document.getElementById('dice-face').textContent=faces[raw-1];
+    document.getElementById('dice-res').textContent=`${total} → ${result}`;
+    document.getElementById('dice-det').textContent=`D6:${raw}${modStr} = ${total}\n${DET[total]}${normRef}`;
+  }
+  if(total===1&&G.unitStatus)G.unitStatus[attacker]='immobile';
+  G.diceQ={result,total,raw,cb,attacker};
+  if(!ov)setTimeout(()=>{if(G.diceQ){G.diceQ.cb(G.diceQ);G.diceQ=null;}},100);
+}
+
+function closeDice(){
+  const ov=document.getElementById('dice-ov');if(ov)ov.style.display='none';
+  if(G.diceQ){G.diceQ.cb(G.diceQ);G.diceQ=null;}
+}
+
+// ══ WHITE CELL ═══════════════════════════════════════════════════════
+function toggleWC(){
+  const p=document.getElementById('wc-panel');
+  if(p)p.style.display=p.style.display==='none'||p.style.display===''?'block':'none';
+}
+function wcInject(){
+  const txt=(document.getElementById('wc-txt')||{}).value;
+  if(!txt||!txt.trim())return;
+  const tp=(document.getElementById('wc-type')||{}).value||'neutral';
+  sit('[WHITE CELL] '+txt.trim(),tp);
+  ord('[WC] '+txt.trim().substring(0,40),'ok');
+  document.getElementById('wc-txt').value='';
+}
+function wcReveal(){
+  const i=G.fog.findIndex((r,j)=>!r);
+  if(i>=0){reveal(i);sit('[WC] Sito rivelato.','success');}
+  else sit('[WC] Tutti mappati.','neutral');
+}
+
+// ══ PRIVATE CONSOLE ══════════════════════════════════════════════════
+const PRIV_INFO={
+  0:{title:'🔵 BLUE CDR — EYES ONLY',sections:[
+    {l:'ORDINI RISERVATI',i:['OPORD: Neutralizzare R-1 entro Fase 3.','ROE: no fuoco entro 300m da siti CPP.','Auth strikes: ALPHA-WHISKEY-7.']},
+    {l:'VULNERABILITÀ',i:['Settore nord: scarsa copertura aerea.','Strada principale: possibile IED.']},
+  ]},
+  1:{title:'⭐ CPP ADVISOR TPC — RISERVATA',sections:[
+    {l:'LISTA NO-STRIKE CLASSIFICATA',i:['F-2 Cittadella: protezione rafforzata.','C-4 Moschea: protezione speciale.','I-5 Scavi: FOG — non divulgare.','E-7 Museo: FOG — evacuazione in corso.']},
+    {l:'INTEL TRAFFICO',i:['Rotta: I-5 → confine nord.','3 intermediari noti. Cod: NICOSIA-7.']},
+    {l:'FASCICOLI CPI',i:['Fascicolo 001 in preparazione.','14 scatti fotografici verificati.']},
+  ]},
+  2:{title:'🔹 CIMIC — DIPLOMATICA',sections:[
+    {l:'CONTATTI RISERVATI',i:['UNESCO Dr. Amara: H24.','Blue Shield: disponibile in 6h.','Min. Cultura: diffidente ma coopera.']},
+    {l:'SOFA STATUS',i:['Nessun SOFA Italia-Talos vigente.','Richiesta MAECI pendente 72h.']},
+  ]},
+  3:{title:'🔴 RED CMD — COMANDO',sections:[
+    {l:'ASSET',i:['R-1: élite. Collina F-1 (+DEF).','R-2: mortai. Range 3km. Mun:60%.']},
+    {l:'OBIETTIVI SEGRETI',i:['P1: occupare Cittadella.','P2: saccheggiare Scavi.','P3: evitare CPI — Moschea ultimo resort.']},
+    {l:'TRAFFICO',i:['Rotta sicura: confine nord. Cod: NICOSIA-7.','Warning: INTERPOL ha individuato la rotta.']},
+  ]}
+};
+function openConsole(ri){
+  const info=PRIV_INFO[ri];if(!info)return;
+  const t=document.getElementById('cm-t');const b=document.getElementById('cm-body');const ov=document.getElementById('cm-ov');
+  if(!t||!b||!ov)return;
+  t.textContent=info.title;
+  b.innerHTML=info.sections.map(s=>`<div class="cm-sec"><div class="cm-lbl">${s.l}</div>${s.i.map(x=>`<div class="cm-item">▸ ${x}</div>`).join('')}</div>`).join('');
+  ov.style.display='flex';
+}
+
+// ══ BOT RED CMD ══════════════════════════════════════════════════════
+function botRedTurn(){
+  if(!G.botMode||G.ap[3]<=0)return;
+  sit('[🤖 BOT RED] Analisi...','neutral');
+  setTimeout(()=>{
+    if(G.redBonus>0){G.ap[3]+=G.redBonus;G.redBonus=0;sit('[🤖] PA bonus attivati.','neutral');updTPnl();renderRC();}
+    const undef=G.hs.findIndex((s,i)=>G.fog[i]&&s.status==='threatened'&&!G.cbDeployed[i]);
+    if(undef>=0&&G.ap[3]>0){
+      sit(`[🤖] Saccheggio ${G.hs[undef].name} — CRT.`,'neutral');
+      resolveCRT('R2',{terrain:'forest',illegal:true,siteIdx:undef,normRef:'DIU R.40'},(r)=>{
+        if(r.total>=3){addSc('red',15);addVl(35);G.trafficking=Math.min(100,G.trafficking+25);updTr();sit(`[🤖] Saccheggio riuscito (${r.result}).`,'alert');ord(`[BOT] SACCHEGGIO CRT:${r.result}`,'violation');}
+        else sit(`[🤖] Saccheggio fallito (${r.result}).`,'neutral');
+        G.ap[3]--;renderRC();
+      });
+      return;
+    }
+    if(G.hs[0].status==='threatened'&&!G.cbDeployed[0]&&G.ap[3]>0){
+      sit('[🤖] R-1 → Cittadella.','neutral');mvU('R1',317,132);addSc('red',8);G.ap[3]--;ord('[BOT] R-1 → CITTADELLA','ok');renderRC();return;
+    }
+    if(G.ap[3]>0){sit('[🤖] Posizione difensiva.','neutral');addSc('red',3);G.ap[3]--;renderRC();}
+  },1800);
+}
+
+// ══ EXPANDED EVENTS: add 14 more cards ═══════════════════════════════
+[
+  {title:'🌐 SESSIONE ONU URGENTE',op:2,body:'Ris.ONU 2347: pressione sul teatro.',effect:'Violazioni Red amplificate questa fase.',fn(){G.unscOn=true;sit('[ONU] Sessione urgente. Violazioni Red amplificate.','alert');}},
+  {title:'⚖ ISPEZIONE CPI',op:2,body:'Advance Team CPI nell'AO.',effect:'Fascicoli CPI valgono +50% BLU.',fn(){G.cpiOn=true;addSc('blue',20);sit('[CPI] Team presente. Fascicoli potenziati.','legal');}},
+  {title:'💰 SEQUESTRO EUROPOL',op:2,body:'Europol congela conto traffico.',effect:'Traffico -30%. Red -2 PA.',fn(){G.trafficking=Math.max(0,G.trafficking-30);G.redBonus=Math.max(0,G.redBonus-2);updTr();updTPnl();sit('[EUROPOL] Sequestro. Traffico -30%.','success');}},
+  {title:'📡 RICOGNIZIONE UAV NATO',op:1,body:'UAV rivela posizioni Red.',effect:'Blue +1 PA.',fn(){G.ap[0]=Math.min(6,G.ap[0]+1);sit('[UAV] Ricognizione. Blue +1 PA.','neutral');}},
+  {title:'⛑ CASCHI BLU URGENTI',op:2,body:'UNESCO: dispiegamento urgente.',effect:'CIMIC: Caschi Blu gratuiti.',fn(){G.cbFree=true;sit('[UNESCO] Caschi Blu urgenti. CIMIC: gratuito.','success');}},
+  {title:'📜 PURPLE NOTICE SPONTANEA',op:1,body:'INTERPOL: Purple Notice autonoma.',effect:'Traffico -20%. +10 BLU.',fn(){G.trafficking=Math.max(0,G.trafficking-20);addSc('blue',10);updTr();sit('[INTERPOL] Purple Notice. Traffico -20%.','legal');}},
+  {title:'🗞 RAPPORTO UNESCO',op:1,body:'UNESCO: rapporto urgente.',effect:'+20% compliance.',fn(){addCmp(20);sit('[UNESCO] Rapporto: +20% compliance.','legal');}},
+  {title:'🌊 ALLUVIONE LAGO TALOS',op:2,body:'Lago esonda. Zone inaccessibili.',effect:'B-2 immobilizzata.',fn(){if(G.unitStatus)G.unitStatus['B2']='immobile';sit('[METEO] Alluvione: B-2 immobilizzata.','alert');}},
+  {title:'🏛 DISCOVERY',op:2,body:'Sito non censito identificato.',effect:'CPP: mappa FOG gratis. +15 BLU.',fn(){const i=G.fog.findIndex((r,j)=>!r);if(i>=0){reveal(i);addSc('blue',15);sit(`[DISCOVERY] ${G.hs[i].name} rivelato.`,'success');}else addSc('blue',20);}},
+  {title:'📡 CYBERATTACK',op:2,body:'Attacco informatico NATO.',effect:'Tutti -1 PA.',fn(){G.ap=G.ap.map(a=>Math.max(0,a-1));sit('[CYBER] Attacco: tutti -1 PA.','alert');renderRC();}},
+  {title:'🏥 TEAM MSF',op:1,body:'Medici Senza Frontiere: corridoio.',effect:'Blue +1 PA. +15% compliance.',fn(){G.ap[0]=Math.min(6,G.ap[0]+1);addCmp(15);sit('[MSF] Corridoio umanitario. +1 PA Blue.','success');}},
+  {title:'🎖 ISPEZIONE NATO CPP',op:1,body:'Ufficiale NATO ispeziona CPP.',effect:'Se compliance>20%: +25 BLU.',fn(){if(G.compliance>20){addSc('blue',25);sit('[NATO] Ispezione OK: +25 BLU.','success');}else{addVl(10);sit('[NATO] Mancata implementazione CPP.','alert');}}},
+  {title:'🔫 IMBOSCATA TPC',op:3,body:'Agguato contro team TPC.',effect:'CRT: determina PA disponibili.',fn(){resolveCRT('TPC',{terrain:'road',illegal:true,siteIdx:-1},(r)=>{if(r.total<=2){G.ap[1]=Math.max(0,G.ap[1]-2);sit('[TPC] Imboscata. -2 PA.','alert');}else sit('[TPC] Imboscata respinta.','success');});}},
+  {title:'💼 MERCANTE D'ARTE BIS',op:2,body:'Secondo intermediario attivo.',effect:'Traffico +20% se Scavi minacciati. Red +1 PA.',fn(){if(G.hs[2].status==='threatened'){G.trafficking=Math.min(100,G.trafficking+20);updTr();}G.ap[3]=Math.min(6,G.ap[3]+1);G.redBonus++;sit('[MERCANTE] Secondo intermediario. Red +1 PA.','alert');}},
+].forEach(e=>EVS.push(e));
+
+</script>
+
+<!-- DICE OVERLAY -->
+<div class="dice-ov" id="dice-ov" style="display:none">
+  <div class="dice-face" id="dice-face">🎲</div>
+  <div class="dice-res" id="dice-res">LANCIO IN CORSO...</div>
+  <div class="dice-det" id="dice-det"></div>
+  <button class="dice-ok" onclick="closeDice()">CONFERMA RISULTATO</button>
+</div>
+<!-- PRIVATE CONSOLE -->
+<div id="cm-ov"><div class="cm"><div class="cm-title" id="cm-t">CONSOLE PRIVATA</div><div id="cm-body"></div><button class="cm-cls" onclick="document.getElementById('cm-ov').style.display='none'">✕ CHIUDI</button></div></div>
+<!-- WHITE CELL PANEL -->
+<div id="wc-panel">
+  <div class="wc-t">⚡ WHITE CELL — GAME DIRECTOR</div>
+  <div style="font-size:7px;color:var(--muted);margin-bottom:6px">Injection libera in qualsiasi momento.</div>
+  <div class="stitle" style="margin-bottom:3px">INJECT SITREP</div>
+  <textarea id="wc-txt" placeholder="Testo evento da iniettare..."></textarea>
+  <select id="wc-type" style="background:rgba(255,255,255,.05);border:1px solid var(--pb);color:var(--bright);font-family:'Share Tech Mono',monospace;font-size:7px;width:100%;padding:2px;margin-bottom:3px">
+    <option value="neutral">Neutro</option><option value="alert">Allerta</option><option value="legal">Legale</option><option value="success">Successo</option><option value="event">Evento</option>
+  </select>
+  <button class="wc-b" onclick="wcInject()">▶ INIETTA SITREP</button>
+  <div class="stitle" style="margin-top:6px;margin-bottom:3px">RISORSE</div>
+  <button class="wc-b" onclick="addSc('blue',10);sit('[WC] +10 BLU','event')">+10 Punteggio BLU</button>
+  <button class="wc-b" onclick="addSc('red',10);sit('[WC] +10 ROSSO','event')">+10 Punteggio ROSSO</button>
+  <button class="wc-b" onclick="addVl(15);sit('[WC] +15% Violazioni','alert')">+15% Violazioni DIU</button>
+  <button class="wc-b" onclick="addCmp(15);sit('[WC] +15% Compliance','legal')">+15% Compliance CPP</button>
+  <button class="wc-b" onclick="G.ap=G.ap.map(a=>Math.min(6,a+1));renderRC();renderActs();sit('[WC] +1 PA tutti','event')">+1 PA a tutti</button>
+  <button class="wc-b" onclick="wcReveal()">Rivela sito FOG</button>
+  <button class="wc-b" onclick="drawEvent()">🎴 Estrai carta evento</button>
+  <div class="stitle" style="margin-top:6px;margin-bottom:3px">SCENARI STORICI</div>
+  <button class="wc-b" onclick="sit('[STORICO] Attacco deliberato su sito WHL tipo Palmira 2015. Ris.ONU 2347 applicabile. CPI indaga.','alert')">💥 Scenario Palmira</button>
+  <button class="wc-b" onclick="sit('[STORICO] Evacuazione emergenza tipo Louvre 1939. 4.000 casse in movimento. UNESCO art.3.','success')">📦 Scenario Louvre</button>
+  <button class="wc-b" onclick="sit('[STORICO] Op. INTERPOL congiunta TPC: 15 reperti recuperati. Purple Notice eseguita.','legal')">🔵 Op. INTERPOL</button>
+  <button class="wc-b" style="margin-top:6px;border-color:#d87070;color:#d87070" onclick="toggleWC()">✕ CHIUDI</button>
+</div>
+
+</body>
+</html>
